@@ -84,7 +84,7 @@ export function AuthForm({ type }: AuthFormProps) {
       if (isLogin) {
         const { email, password } = values as z.infer<typeof loginSchema>;
         await signInWithEmailAndPassword(auth, email, password);
-        router.push('/dashboard');
+        router.replace('/dashboard');
       } else {
         const { name, email, password, role } = values as z.infer<
           typeof signupSchema
@@ -101,7 +101,7 @@ export function AuthForm({ type }: AuthFormProps) {
           email,
           role,
         });
-        router.push('/dashboard');
+        router.replace('/dashboard');
       }
     } catch (error: any) {
       toast({
