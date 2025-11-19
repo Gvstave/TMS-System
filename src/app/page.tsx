@@ -13,7 +13,7 @@ export default function RootPage() {
       if (user) {
         router.replace('/dashboard');
       } else {
-        router.replace('/home');
+        router.replace('/');
       }
     }
   }, [user, loading, router]);
