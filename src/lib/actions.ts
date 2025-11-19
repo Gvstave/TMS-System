@@ -8,21 +8,33 @@ import {
   doc,
   serverTimestamp,
   updateDoc,
-  getDoc
+  getDoc,
+  Timestamp
 } from 'firebase/firestore';
 import type { Project, Task, ProjectStatus, AssignedStudent } from './types';
 
-type ProjectInput = Omit<
-  Project,
-  'id' | 'status' | 'createdAt' | 'updatedAt'
->;
+// The input for the server action must be a plain object.
+// The deadline is passed as an ISO string.
+type ProjectInputAction = {
+  title: string;
+  description: string;
+  deadline: string; // ISO string
+  assignedTo: AssignedStudent[];
+  createdBy: string;
+};
 
-export async function createProject(projectInput: ProjectInput) {
+
+export async function createProject(projectInput: ProjectInputAction) {
   try {
-    const { assignedTo, ...restOfProject } = projectInput;
+    const { assignedTo, deadline, ...restOfProject } = projectInput;
+    
+    // Convert the ISO string back to a Firestore Timestamp on the server.
+    const deadlineTimestamp = Timestamp.fromDate(new Date(deadline));
+
     await addDoc(collection(db, 'projects'), {
       ...restOfProject,
       assignedTo,
+      deadline: deadlineTimestamp,
       status: 'Pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),

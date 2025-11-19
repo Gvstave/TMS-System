@@ -37,7 +37,6 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { User } from '@/lib/types';
 import { createProject } from '@/lib/actions';
-import { Timestamp } from 'firebase/firestore';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 
@@ -74,7 +73,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
     setIsLoading(true);
     const projectInput = {
       ...values,
-      deadline: Timestamp.fromDate(values.deadline),
+      deadline: values.deadline.toISOString(), // Convert Date to ISO string
       createdBy: lecturerId,
     };
 
