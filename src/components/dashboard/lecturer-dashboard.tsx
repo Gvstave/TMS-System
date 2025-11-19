@@ -64,7 +64,7 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
       );
     }
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredProjects.map((project) => (
           <ProjectCard key={project.id} project={project} userRole="lecturer" />
         ))}
@@ -80,13 +80,13 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
         user={currentUser}
         actionSlot={
           <>
-            {/* <AiLecturerPrioritizer projects={projects} students={students} /> */}
+            <AiLecturerPrioritizer projects={projects} students={students} />
             <CreateProjectDialog lecturerId={currentUser.uid} students={students} />
           </>
         }
       />
       <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
+        <TabsList className="overflow-x-auto w-full justify-start">
           <TabsTrigger value="all">All</TabsTrigger>
           {statuses.map(status => (
             <TabsTrigger key={status} value={status}>{status}</TabsTrigger>

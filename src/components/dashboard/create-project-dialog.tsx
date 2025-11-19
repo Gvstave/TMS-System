@@ -36,7 +36,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { User } from '@/lib/types';
-import { createProject } from '@/lib/actions';
+import { createProject, type ProjectInputAction } from '@/lib/actions';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 
@@ -71,7 +71,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
 
   async function onSubmit(values: z.infer<typeof projectSchema>) {
     setIsLoading(true);
-    const projectInput = {
+    const projectInput: ProjectInputAction = {
       ...values,
       deadline: values.deadline.toISOString(), // Convert Date to ISO string
       createdBy: lecturerId,
@@ -98,7 +98,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="w-full md:w-auto">
           <Plus className="-ml-1 mr-2 h-4 w-4" />
           Create Project
         </Button>
@@ -154,7 +154,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
                             variant="outline"
                             role="combobox"
                             className={cn(
-                              "w-full justify-between",
+                              "w-full justify-between h-auto",
                               !field.value?.length && "text-muted-foreground"
                             )}
                           >
@@ -177,7 +177,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                         <Command>
                           <CommandInput placeholder="Search students..." />
                           <CommandEmpty>No students found.</CommandEmpty>

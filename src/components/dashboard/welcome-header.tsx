@@ -9,7 +9,7 @@ interface WelcomeHeaderProps {
 
 export function WelcomeHeader({ user, actionSlot }: WelcomeHeaderProps) {
   return (
-    <div className="flex items-center justify-between space-y-2">
+    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
       <div>
         <h2 className="text-3xl font-bold tracking-tight font-headline">
           Welcome back, {user.name.split(' ')[0]}!
@@ -18,7 +18,7 @@ export function WelcomeHeader({ user, actionSlot }: WelcomeHeaderProps) {
           Here's what's on your plate for today.
         </p>
       </div>
-      <div className="flex items-center space-x-2">
+      <div className="flex w-full md:w-auto items-center space-x-2">
         {actionSlot}
       </div>
     </div>

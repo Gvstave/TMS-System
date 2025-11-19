@@ -66,7 +66,7 @@ export function AiLecturerPrioritizer({ projects, students }: AiLecturerPrioriti
 
       const studentWorkloads = students.map(student => ({
         studentId: student.uid,
-        taskCount: projects.filter(t => t.assignedTo === student.uid && t.status !== 'Completed').length,
+        taskCount: projects.filter(t => t.assignedTo.some(s => s.id === student.uid) && t.status !== 'Completed').length,
       }));
 
       const input = {
@@ -75,7 +75,7 @@ export function AiLecturerPrioritizer({ projects, students }: AiLecturerPrioriti
           title: t.title,
           description: t.description,
           deadline: getDeadlineAsDate(t.deadline).toISOString().split('T')[0],
-          studentId: t.assignedTo,
+          studentId: t.assignedTo.map(s => s.id).join(', '), // Join IDs if multiple
         })),
         studentWorkloads,
       };
@@ -94,12 +94,16 @@ export function AiLecturerPrioritizer({ projects, students }: AiLecturerPrioriti
   };
 
   const getProjectTitle = (taskId: string) => projects.find(t => t.id === taskId)?.title || "Unknown Project";
-  const getStudentName = (studentId: string) => students.find(s => s.uid === studentId)?.name || "Unknown Student";
+  const getStudentName = (studentId: string) => {
+    const studentIds = studentId.split(', ');
+    if (studentIds.length > 1) return "Multiple Students";
+    return students.find(s => s.uid === studentId)?.name || "Unknown Student"
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" className="w-full md:w-auto">
           <Sparkles className="mr-2 h-4 w-4" />
           AI Suggestions
         </Button>
@@ -116,7 +120,7 @@ export function AiLecturerPrioritizer({ projects, students }: AiLecturerPrioriti
         {!result ? (
           <div className="flex flex-col items-center justify-center space-y-4 py-8">
             <p className="text-center text-muted-foreground">Click the button below to generate project priority suggestions for all active students.</p>
-            <Button onClick={handlePrioritize} disabled={isLoading} className="w-1/2">
+            <Button onClick={handlePrioritize} disabled={isLoading} className="w-full md:w-1/2">
               {isLoading && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
