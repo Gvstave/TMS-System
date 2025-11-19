@@ -50,7 +50,8 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
 
     const studentsQuery = query(
       collection(db, 'users'),
-      where('role', '==', 'student')
+      where('role', '==', 'student'),
+      where('lecturerId', '==', currentUser.uid)
     );
     const unsubscribeStudents = onSnapshot(studentsQuery, (snapshot) => {
       const fetchedStudents = snapshot.docs.map((doc) => doc.data() as User);

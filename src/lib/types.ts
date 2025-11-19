@@ -6,6 +6,7 @@ export type User = {
   name: string;
   email: string;
   role: 'student' | 'lecturer';
+  lecturerId?: string; // Optional, only for students
 };
 
 export const ProjectStatusSchema = z.enum(['Pending', 'In Progress', 'Completed']);

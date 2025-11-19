@@ -7,7 +7,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -38,8 +38,9 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { auth, db } from '@/lib/firebase';
 import { Logo } from '@/components/logo';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import type { User } from '@/lib/types';
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -50,7 +51,17 @@ const signupSchema = z.object({
   role: z.enum(['student', 'lecturer'], {
     required_error: 'You need to select a role.',
   }),
+  lecturerId: z.string().optional(),
+}).refine(data => {
+    if (data.role === 'student' && !data.lecturerId) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Please select a lecturer.",
+    path: ["lecturerId"],
 });
+
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -67,6 +78,7 @@ export function AuthForm({ type }: AuthFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [lecturers, setLecturers] = useState<User[]>([]);
 
   const isLogin = type === 'login';
   const schema = isLogin ? loginSchema : signupSchema;
@@ -75,8 +87,22 @@ export function AuthForm({ type }: AuthFormProps) {
     resolver: zodResolver(schema),
     defaultValues: isLogin
       ? { email: '', password: '' }
-      : { name: '', email: '', password: '', role: undefined },
+      : { name: '', email: '', password: '', role: undefined, lecturerId: undefined },
   });
+
+  const role = form.watch('role');
+
+  useEffect(() => {
+    async function fetchLecturers() {
+      if (type === 'signup') {
+        const lecturersQuery = query(collection(db, 'users'), where('role', '==', 'lecturer'));
+        const querySnapshot = await getDocs(lecturersQuery);
+        const fetchedLecturers = querySnapshot.docs.map(doc => doc.data() as User);
+        setLecturers(fetchedLecturers);
+      }
+    }
+    fetchLecturers();
+  }, [type]);
 
   async function onSubmit(values: z.infer<typeof schema>) {
     setIsLoading(true);
@@ -86,7 +112,7 @@ export function AuthForm({ type }: AuthFormProps) {
         await signInWithEmailAndPassword(auth, email, password);
         router.replace('/dashboard');
       } else {
-        const { name, email, password, role } = values as z.infer<
+        const { name, email, password, role, lecturerId } = values as z.infer<
           typeof signupSchema
         >;
         const userCredential = await createUserWithEmailAndPassword(
@@ -95,12 +121,20 @@ export function AuthForm({ type }: AuthFormProps) {
           password
         );
         const user = userCredential.user;
-        await setDoc(doc(db, 'users', user.uid), {
+
+        const userData: Omit<User, 'lecturerId'> & { lecturerId?: string } = {
           uid: user.uid,
           name,
           email,
           role,
-        });
+        };
+
+        if (role === 'student') {
+            userData.lecturerId = lecturerId;
+        }
+
+        await setDoc(doc(db, 'users', user.uid), userData);
+
         router.replace('/dashboard');
       }
     } catch (error: any) {
@@ -175,30 +209,62 @@ export function AuthForm({ type }: AuthFormProps) {
               )}
             />
             {!isLogin && (
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="lecturer">Lecturer</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+              <>
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="student">Student</SelectItem>
+                          <SelectItem value="lecturer">Lecturer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {role === 'student' && (
+                   <FormField
+                    control={form.control}
+                    name="lecturerId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Lecturer</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select your lecturer" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {lecturers.length > 0 ? (
+                                lecturers.map(lecturer => (
+                                    <SelectItem key={lecturer.uid} value={lecturer.uid}>
+                                        {lecturer.name}
+                                    </SelectItem>
+                                ))
+                            ) : (
+                                <div className="p-2 text-sm text-muted-foreground">No lecturers available.</div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
-              />
+              </>
             )}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && (
