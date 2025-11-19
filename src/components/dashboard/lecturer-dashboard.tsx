@@ -66,7 +66,7 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredProjects.map((project) => (
-          <ProjectCard key={project.id} project={project} userRole="lecturer" />
+          <ProjectCard key={project.id} project={project} userRole="lecturer" students={students} />
         ))}
       </div>
     );
@@ -75,18 +75,18 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
   const statuses: Project['status'][] = ['Pending', 'In Progress', 'Completed'];
 
   return (
-    <>
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <WelcomeHeader 
         user={currentUser}
         actionSlot={
-          <>
+          <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
             <AiLecturerPrioritizer projects={projects} students={students} />
             <CreateProjectDialog lecturerId={currentUser.uid} students={students} />
-          </>
+          </div>
         }
       />
       <Tabs defaultValue="all" className="space-y-4">
-        <TabsList className="overflow-x-auto w-full justify-start">
+        <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex md:grid-cols-4">
           <TabsTrigger value="all">All</TabsTrigger>
           {statuses.map(status => (
             <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
@@ -103,6 +103,6 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
         ))}
 
       </Tabs>
-    </>
+    </div>
   );
 }

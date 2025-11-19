@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { Project, ProjectStatus } from '@/lib/types';
+import type { Project, ProjectStatus, User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
   AlertTriangle,
@@ -40,6 +40,7 @@ import {
 interface ProjectCardProps {
   project: Project;
   userRole: 'lecturer' | 'student';
+  students?: User[]; // Make students optional, but provide it for lecturers
 }
 
 const statusConfig: Record<
@@ -51,7 +52,7 @@ const statusConfig: Record<
   Completed: { icon: CircleCheck, color: 'text-green-500' },
 };
 
-export function ProjectCard({ project, userRole }: ProjectCardProps) {
+export function ProjectCard({ project, userRole, students = [] }: ProjectCardProps) {
 
   const getDeadlineDate = (deadline: Project['deadline']): Date => {
     if (deadline instanceof Timestamp) {
@@ -83,8 +84,16 @@ export function ProjectCard({ project, userRole }: ProjectCardProps) {
   }
 
   const StatusIcon = statusConfig[project.status].icon;
-  const assignedToNames = Array.isArray(project.assignedTo) 
-    ? project.assignedTo.map(s => s.name).join(', ')
+  
+  const assignedToNames = Array.isArray(project.assignedTo)
+    ? project.assignedTo
+        .map(studentRef => {
+          // studentRef can be a string (uid) or an object {id, name}
+          const studentId = typeof studentRef === 'string' ? studentRef : studentRef.id;
+          const foundStudent = students.find(s => s.uid === studentId);
+          return foundStudent ? foundStudent.name : (studentRef as any).name || 'Unknown';
+        })
+        .join(', ')
     : '';
 
   const cardContent = (

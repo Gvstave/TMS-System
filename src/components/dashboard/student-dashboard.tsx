@@ -22,7 +22,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
     if (!currentUser) return;
     const q = query(
       collection(db, 'projects'),
-      where('assignedTo.id', 'in', [currentUser.uid])
+      where('assignedTo', 'array-contains', currentUser.uid)
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedProjects = snapshot.docs.map(
@@ -62,15 +62,17 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
   const statuses: Project['status'][] = ['Pending', 'In Progress', 'Completed'];
 
   return (
-    <>
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <WelcomeHeader 
         user={currentUser} 
         actionSlot={
-          <AiStudentPrioritizer projects={projects} />
+          <div className="w-full md:w-auto">
+            <AiStudentPrioritizer projects={projects} />
+          </div>
         }
       />
       <Tabs defaultValue="all" className="space-y-4">
-        <TabsList className="overflow-x-auto w-full justify-start">
+        <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex md:grid-cols-4">
           <TabsTrigger value="all">All</TabsTrigger>
           {statuses.map(status => (
             <TabsTrigger key={status} value={status}>{status}</TabsTrigger>
@@ -85,6 +87,6 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
           </TabsContent>
         ))}
       </Tabs>
-    </>
+    </div>
   );
 }

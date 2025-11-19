@@ -36,7 +36,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { User } from '@/lib/types';
-import { createProject, type ProjectInputAction } from '@/lib/actions';
+import { createProject } from '@/lib/actions';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 
@@ -44,11 +44,10 @@ const projectSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters.' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
   deadline: z.date({ required_error: 'A deadline is required.' }),
-  assignedTo: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-  })).min(1, 'Please assign this project to at least one student.'),
+  assignedTo: z.array(z.string()).min(1, 'Please assign this project to at least one student.'),
 });
+
+type FormValues = z.infer<typeof projectSchema>;
 
 interface CreateProjectDialogProps {
   lecturerId: string;
@@ -60,7 +59,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof projectSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
       title: '',
@@ -69,15 +68,15 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
     },
   });
 
-  async function onSubmit(values: z.infer<typeof projectSchema>) {
+  async function onSubmit(values: FormValues) {
     setIsLoading(true);
-    const projectInput: ProjectInputAction = {
+    
+    const result = await createProject({
       ...values,
-      deadline: values.deadline.toISOString(), // Convert Date to ISO string
+      deadline: values.deadline.toISOString(),
       createdBy: lecturerId,
-    };
+    });
 
-    const result = await createProject(projectInput);
     if (result.success) {
       toast({
         title: 'Project Created',
@@ -94,6 +93,8 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
     }
     setIsLoading(false);
   }
+  
+  const selectedStudents = form.watch('assignedTo');
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -155,15 +156,17 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
                             role="combobox"
                             className={cn(
                               "w-full justify-between h-auto",
-                              !field.value?.length && "text-muted-foreground"
+                              !selectedStudents?.length && "text-muted-foreground"
                             )}
                           >
                              <div className="flex gap-1 flex-wrap">
-                                {field.value.length > 0 ? (
-                                    field.value.map((student) => (
+                                {selectedStudents.length > 0 ? (
+                                    students
+                                    .filter(s => selectedStudents.includes(s.uid))
+                                    .map((student) => (
                                     <Badge
                                         variant="secondary"
-                                        key={student.id}
+                                        key={student.uid}
                                         className="mr-1 mb-1"
                                     >
                                         {student.name}
@@ -180,28 +183,27 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
                       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                         <Command>
                           <CommandInput placeholder="Search students..." />
-                          <CommandEmpty>No students found.</CommandEmpty>
                           <CommandList>
+                            <CommandEmpty>No students found.</CommandEmpty>
                             <CommandGroup>
                                 {students.map((student) => (
                                 <CommandItem
                                     value={student.name}
                                     key={student.uid}
                                     onSelect={() => {
-                                      const selected = field.value ? [...field.value] : [];
-                                      const index = selected.findIndex(s => s.id === student.uid);
+                                      const currentSelection = field.value || [];
+                                      const index = currentSelection.indexOf(student.uid);
                                       if (index > -1) {
-                                        selected.splice(index, 1);
+                                        field.onChange(currentSelection.filter(uid => uid !== student.uid));
                                       } else {
-                                        selected.push({ id: student.uid, name: student.name });
+                                        field.onChange([...currentSelection, student.uid]);
                                       }
-                                      field.onChange(selected);
                                     }}
                                 >
                                     <Check
                                     className={cn(
                                         "mr-2 h-4 w-4",
-                                        field.value?.some(s => s.id === student.uid)
+                                        field.value?.includes(student.uid)
                                         ? "opacity-100"
                                         : "opacity-0"
                                     )}

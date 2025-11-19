@@ -19,31 +19,28 @@ type ProjectInputAction = {
   title: string;
   description: string;
   deadline: string; // ISO string
-  assignedTo: AssignedStudent[];
+  assignedTo: string[]; // Array of student UIDs
   createdBy: string;
 };
 
 
 export async function createProject(projectInput: ProjectInputAction) {
   try {
-    const { assignedTo, deadline, ...restOfProject } = projectInput;
+    const { deadline, ...restOfProject } = projectInput;
     
     // Convert the ISO string back to a Firestore Timestamp on the server.
     const deadlineTimestamp = Timestamp.fromDate(new Date(deadline));
 
     await addDoc(collection(db, 'projects'), {
       ...restOfProject,
-      assignedTo,
       deadline: deadlineTimestamp,
       status: 'Pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
 
-    const studentNames = projectInput.assignedTo.map(s => s.name).join(', ');
-
     await addDoc(collection(db, 'activity_logs'), {
-      action: `Project "${projectInput.title}" created and assigned to ${studentNames}`,
+      action: `Project "${projectInput.title}" created`,
       timestamp: serverTimestamp(),
       userId: projectInput.createdBy,
     });
