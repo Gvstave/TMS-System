@@ -135,10 +135,11 @@ export function TaskManagement({ project, readOnly }: TaskManagementProps) {
   }
 
   const allTasksCompleted = tasks.length > 0 && tasks.every(t => t.status === 'Completed');
+  const isProjectCompleted = project.status === 'Completed';
 
   return (
     <div className="space-y-4">
-      {!readOnly && (
+      {!readOnly && !isProjectCompleted && (
         <>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-2">
@@ -173,7 +174,7 @@ export function TaskManagement({ project, readOnly }: TaskManagementProps) {
                 <Select
                     value={task.status}
                     onValueChange={(newStatus: TaskStatus) => handleStatusChange(task.id, newStatus)}
-                    disabled={isUpdating === task.id || readOnly}
+                    disabled={isUpdating === task.id || readOnly || isProjectCompleted}
                 >
                     <SelectTrigger className="w-[150px]">
                         <SelectValue>
@@ -214,7 +215,7 @@ export function TaskManagement({ project, readOnly }: TaskManagementProps) {
         )}
       </div>
 
-       {!readOnly && project.status !== 'Completed' && (
+       {!readOnly && !isProjectCompleted && (
         <>
             <Separator />
             <DialogFooter className="pt-4">
