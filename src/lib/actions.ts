@@ -10,32 +10,28 @@ import {
   updateDoc,
   getDoc
 } from 'firebase/firestore';
-import type { Project, Task, ProjectStatus } from './types';
+import type { Project, Task, ProjectStatus, AssignedStudent } from './types';
 
 type ProjectInput = Omit<
   Project,
-  'id' | 'status' | 'createdAt' | 'updatedAt' | 'assignedToName'
+  'id' | 'status' | 'createdAt' | 'updatedAt'
 > & {
-  assignedStudent: {
-    id: string;
-    name: string;
-  };
+  assignedTo: AssignedStudent[];
 };
 
 export async function createProject(projectInput: ProjectInput) {
   try {
-    const { assignedStudent, ...rest } = projectInput;
     await addDoc(collection(db, 'projects'), {
-      ...rest,
-      assignedTo: assignedStudent.id,
-      assignedToName: assignedStudent.name,
+      ...projectInput,
       status: 'Pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
 
+    const studentNames = projectInput.assignedTo.map(s => s.name).join(', ');
+
     await addDoc(collection(db, 'activity_logs'), {
-      action: `Project "${projectInput.title}" created and assigned to ${assignedStudent.name}`,
+      action: `Project "${projectInput.title}" created and assigned to ${studentNames}`,
       timestamp: serverTimestamp(),
       userId: projectInput.createdBy,
     });

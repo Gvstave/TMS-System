@@ -11,13 +11,17 @@ export type User = {
 export const ProjectStatusSchema = z.enum(['Pending', 'In Progress', 'Completed']);
 export type ProjectStatus = z.infer<typeof ProjectStatusSchema>;
 
-export type Project = {
+export type AssignedStudent = {
   id: string;
+  name: string;
+};
+
+export type Project = {
+  id:string;
   title: string;
   description: string;
   deadline: Timestamp;
-  assignedTo: string;
-  assignedToName: string;
+  assignedTo: AssignedStudent[];
   createdBy: string;
   status: ProjectStatus;
   createdAt: Timestamp;

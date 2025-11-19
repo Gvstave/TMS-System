@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
 import type { Project, ProjectStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
@@ -17,11 +16,9 @@ import {
   CircleCheck,
   CircleDot,
   Clock,
-  Loader2,
+  Users
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
-import { useAuth } from '@/context/auth-context';
-import { useState } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { TaskManagement } from './task-management';
 import {
@@ -32,6 +29,13 @@ import {
   DialogTrigger,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 interface ProjectCardProps {
   project: Project;
@@ -48,9 +52,6 @@ const statusConfig: Record<
 };
 
 export function ProjectCard({ project, userRole }: ProjectCardProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [isUpdating, setIsUpdating] = useState(false);
 
   const getDeadlineDate = (deadline: Project['deadline']): Date => {
     if (deadline instanceof Timestamp) {
@@ -82,9 +83,10 @@ export function ProjectCard({ project, userRole }: ProjectCardProps) {
   }
 
   const StatusIcon = statusConfig[project.status].icon;
+  const assignedToNames = project.assignedTo.map(s => s.name).join(', ');
 
   const cardContent = (
-     <Card className={cn('flex flex-col transition-all h-full', cardBorderColor, userRole === 'lecturer' && 'cursor-pointer hover:shadow-md')}>
+     <Card className={cn('flex flex-col transition-all h-full', cardBorderColor, 'cursor-pointer hover:shadow-md')}>
         <CardHeader>
             <CardTitle className="font-headline text-lg tracking-tight line-clamp-2">
             {project.title}
@@ -118,31 +120,20 @@ export function ProjectCard({ project, userRole }: ProjectCardProps) {
             </div>
         </CardContent>
         <CardFooter className="flex-col items-start gap-2">
-            {userRole === 'lecturer' && (
-                <Badge variant="secondary">Assigned to: {project.assignedToName}</Badge>
-            )}
-             {userRole === 'student' && (
-                 <Button variant="outline" className="w-full">Manage Tasks</Button>
+           <div className="flex items-center text-xs text-muted-foreground">
+                <Users className="mr-2 h-3 w-3" />
+                <span className="truncate">{assignedToNames}</span>
+            </div>
+            {userRole === 'student' && (
+                 <Button variant="outline" className="w-full !mt-4">Manage Tasks</Button>
             )}
         </CardFooter>
     </Card>
   )
 
-  if (userRole === 'student') {
-    return (
-        <Dialog>
-            <DialogTrigger asChild>
-                {cardContent}
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle className="font-headline">{project.title} - Tasks</DialogTitle>
-                </DialogHeader>
-                <TaskManagement project={project} readOnly={false} />
-            </DialogContent>
-        </Dialog>
-    )
-  }
+  const dialogTitle = userRole === 'lecturer' ? `${project.title} - Task Progress` : `${project.title} - Tasks`;
+  const dialogDescription = userRole === 'lecturer' ? `Viewing tasks for ${assignedToNames}.` : "Break down your project into smaller tasks.";
+
 
   return (
     <Dialog>
@@ -151,12 +142,12 @@ export function ProjectCard({ project, userRole }: ProjectCardProps) {
         </DialogTrigger>
         <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-                <DialogTitle className="font-headline">{project.title} - Task Progress</DialogTitle>
+                <DialogTitle className="font-headline">{dialogTitle}</DialogTitle>
                  <p className="text-sm text-muted-foreground">
-                    Viewing tasks for {project.assignedToName}.
+                    {dialogDescription}
                   </p>
             </DialogHeader>
-            <TaskManagement project={project} readOnly={true} />
+            <TaskManagement project={project} readOnly={userRole === 'lecturer'} />
         </DialogContent>
     </Dialog>
   );

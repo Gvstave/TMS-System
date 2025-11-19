@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Loader2, Plus } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Plus, Check, ChevronsUpDown } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -28,13 +28,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -45,15 +38,17 @@ import { cn } from '@/lib/utils';
 import type { User } from '@/lib/types';
 import { createProject } from '@/lib/actions';
 import { Timestamp } from 'firebase/firestore';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
 
 const projectSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters.' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
   deadline: z.date({ required_error: 'A deadline is required.' }),
-  assignedStudent: z.object({
+  assignedTo: z.array(z.object({
     id: z.string(),
     name: z.string(),
-  }, { required_error: 'Please assign this project to a student.'}),
+  })).min(1, 'Please assign this project to at least one student.'),
 });
 
 interface CreateProjectDialogProps {
@@ -71,6 +66,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
     defaultValues: {
       title: '',
       description: '',
+      assignedTo: [],
     },
   });
 
@@ -108,11 +104,11 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
           Create Project
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-headline">Create New Project</DialogTitle>
           <DialogDescription>
-            Fill in the details below to assign a new project to a student.
+            Fill in the details below to assign a new project to one or more students.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -124,7 +120,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Final Year Project" {...field} />
+                    <Input placeholder="e.g., Collaborative Research Paper" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -146,74 +142,122 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
                 </FormItem>
               )}
             />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
+             <FormField
                 control={form.control}
-                name="deadline"
+                name="assignedTo"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Deadline</FormLabel>
-                    <Popover>
+                    <FormLabel>Assign to</FormLabel>
+                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
-                            variant={'outline'}
+                            variant="outline"
+                            role="combobox"
                             className={cn(
-                              'w-full pl-3 text-left font-normal',
-                              !field.value && 'text-muted-foreground'
+                              "w-full justify-between",
+                              !field.value?.length && "text-muted-foreground"
                             )}
                           >
-                            {field.value ? (
-                              format(field.value, 'PPP')
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                             <div className="flex gap-1 flex-wrap">
+                                {field.value.length > 0 ? (
+                                    field.value.map((student) => (
+                                    <Badge
+                                        variant="secondary"
+                                        key={student.id}
+                                        className="mr-1 mb-1"
+                                    >
+                                        {student.name}
+                                    </Badge>
+                                    ))
+                                ) : (
+                                    "Select students"
+                                )}
+                            </div>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date() || date < new Date('1900-01-01')}
-                          initialFocus
-                        />
+                      <PopoverContent className="w-full p-0">
+                        <Command>
+                          <CommandInput placeholder="Search students..." />
+                          <CommandEmpty>No students found.</CommandEmpty>
+                          <CommandList>
+                            <CommandGroup>
+                                {students.map((student) => (
+                                <CommandItem
+                                    value={student.name}
+                                    key={student.uid}
+                                    onSelect={() => {
+                                      const selected = field.value ? [...field.value] : [];
+                                      const index = selected.findIndex(s => s.id === student.uid);
+                                      if (index > -1) {
+                                        selected.splice(index, 1);
+                                      } else {
+                                        selected.push({ id: student.uid, name: student.name });
+                                      }
+                                      field.onChange(selected);
+                                    }}
+                                >
+                                    <Check
+                                    className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value?.some(s => s.id === student.uid)
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                    />
+                                    {student.name}
+                                </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
                       </PopoverContent>
                     </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="assignedStudent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Assign to</FormLabel>
-                    <Select onValueChange={(value) => {
-                      const student = students.find(s => s.uid === value);
-                      if (student) field.onChange({ id: student.uid, name: student.name });
-                    }}>
+            <FormField
+              control={form.control}
+              name="deadline"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Deadline</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a student" />
-                        </SelectTrigger>
+                        <Button
+                          variant={'outline'}
+                          className={cn(
+                            'w-full pl-3 text-left font-normal',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, 'PPP')
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
                       </FormControl>
-                      <SelectContent>
-                        {students.map((student) => (
-                          <SelectItem key={student.uid} value={student.uid}>
-                            {student.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => date < new Date() || date < new Date('1900-01-01')}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter>
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

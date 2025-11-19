@@ -10,6 +10,7 @@ import { WelcomeHeader } from './welcome-header';
 import { CreateProjectDialog } from './create-project-dialog';
 import { AiLecturerPrioritizer } from './ai-lecturer-prioritizer';
 import { Loader2 } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 
 interface LecturerDashboardProps {
   currentUser: User;

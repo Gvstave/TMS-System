@@ -21,7 +21,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
   useEffect(() => {
     const q = query(
       collection(db, 'projects'),
-      where('assignedTo', '==', currentUser.uid)
+      where('assignedTo', 'array-contains', {id: currentUser.uid, name: currentUser.name})
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedProjects = snapshot.docs.map(
@@ -32,7 +32,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
     });
 
     return () => unsubscribe();
-  }, [currentUser.uid]);
+  }, [currentUser.uid, currentUser.name]);
 
   const renderProjectList = (filteredProjects: Project[]) => {
     if (loading) {
