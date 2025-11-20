@@ -156,11 +156,18 @@ export function TaskManagement({
       const selectedExists = tasks.some(t => t.id === selectedTask?.id);
       if (!selectedExists || !selectedTask) {
         setSelectedTask(tasks.find(t => !t.parentId) || tasks[0]);
+      } else {
+        // Update selectedTask with the latest data from tasks array
+        const updatedSelectedTask = tasks.find(t => t.id === selectedTask.id);
+        if (updatedSelectedTask) {
+          setSelectedTask(updatedSelectedTask);
+        }
       }
     } else {
       setSelectedTask(null);
     }
   }, [tasks, selectedTask]);
+
 
   useEffect(() => {
     if (selectedTask) {
@@ -341,11 +348,12 @@ export function TaskManagement({
         key={task.id}
         className={cn(
             "w-full cursor-pointer transition-colors bg-card", 
+            isSubtask && "w-[95%]",
             selectedTask?.id === task.id ? "bg-muted border-primary" : "hover:bg-muted/50"
         )}
         onClick={() => setSelectedTask(task)}
     >
-      <CardContent className={cn("flex items-center justify-between p-2.5", isSubtask && "pl-12 pr-2.5")}>
+      <CardContent className={cn("flex items-center justify-between p-2.5", isSubtask && "p-1.5")}>
         <p className={cn("flex-1 font-medium line-clamp-1 text-sm", isSubtask && "text-xs")}>{task.title}</p>
         <div className="flex items-center gap-2">
             {task.dueDate && (
@@ -358,8 +366,8 @@ export function TaskManagement({
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
-                                <MessageSquarePlus className="h-3.5 w-3.5" />
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
+                                <MessageSquarePlus className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -375,7 +383,7 @@ export function TaskManagement({
             }
             disabled={isUpdating === task.id || readOnly || isProjectCompleted}
           >
-            <SelectTrigger className={cn("w-[140px] text-xs h-8", isSubtask && "h-7")}>
+            <SelectTrigger className={cn("w-[140px] text-xs h-8", isSubtask && "h-7 text-xs")}>
               <SelectValue>
                 <div className="flex items-center gap-2">
                   {isUpdating === task.id ? (
@@ -539,7 +547,7 @@ export function TaskManagement({
                                 </form>
                             </Form>
                         )}
-                        <div className="flex flex-col space-y-1">
+                        <div className="flex flex-col space-y-1 items-end">
                             {task.subtasks?.map((subtask) => renderTask(subtask, true))}
                         </div>
                     </div>
@@ -648,4 +656,6 @@ export function TaskManagement({
 }
 
     
+    
+
     
