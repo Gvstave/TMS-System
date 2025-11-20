@@ -99,7 +99,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full md:w-auto">
+        <Button className="w-full md:w-auto whitespace-nowrap">
           <Plus className="-ml-1 mr-2 h-4 w-4" />
           Create Project
         </Button>

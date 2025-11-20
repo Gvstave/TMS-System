@@ -286,7 +286,7 @@ export function AuthForm({ type }: AuthFormProps) {
             href={isLogin ? '/signup' : '/login'}
             className="ml-1 underline"
           >
-            {isLogin ? 'Sign up' : 'Sign in'}
+            {isLogin ? 'Sign Up' : 'Sign In'}
           </Link>
         </div>
       </CardContent>

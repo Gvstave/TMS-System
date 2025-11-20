@@ -45,7 +45,7 @@ export function UserNav() {
           </Avatar>
           <div className="flex flex-col items-start overflow-hidden">
             <span className="truncate text-sm font-medium">{user?.name}</span>
-            <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
+            <span className="w-[150px] truncate text-xs text-muted-foreground">{user?.email}</span>
           </div>
         </Button>
       </DropdownMenuTrigger>
