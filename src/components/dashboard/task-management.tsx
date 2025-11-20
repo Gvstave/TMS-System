@@ -5,11 +5,23 @@ import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { collection, query, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  onSnapshot,
+  Timestamp,
+  orderBy,
+  where,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import type { Project, Task, TaskStatus, Comment } from '@/lib/types';
-import { createTask, updateTaskStatus, updateProjectStatus, addCommentToTask } from '@/lib/actions';
+import {
+  createTask,
+  updateTaskStatus,
+  updateProjectStatus,
+  addCommentToTask,
+} from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -27,12 +39,28 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Loader2, Circle, CircleDot, CircleCheck, Send, CalendarIcon, CornerDownRight, MessageSquarePlus, MessageCircle } from 'lucide-react';
+import {
+  Plus,
+  Loader2,
+  Circle,
+  CircleDot,
+  CircleCheck,
+  Send,
+  CalendarIcon,
+  CornerDownRight,
+  MessageSquarePlus,
+  MessageCircle,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 import { DialogFooter } from '../ui/dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Calendar } from '../ui/calendar';
@@ -45,11 +73,11 @@ const taskSchema = z.object({
 });
 
 const subtaskSchema = z.object({
-    title: z.string().min(3, 'Subtask title must be at least 3 characters.')
+  title: z.string().min(3, 'Subtask title must be at least 3 characters.'),
 });
 
 const commentSchema = z.object({
-    text: z.string().min(1, 'Comment cannot be empty.'),
+  text: z.string().min(1, 'Comment cannot be empty.'),
 });
 
 interface TaskManagementProps {
@@ -67,8 +95,11 @@ const statusConfig: Record<
   Completed: { icon: CircleCheck, color: 'text-green-500' },
 };
 
-
-export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagementProps) {
+export function TaskManagement({
+  project,
+  readOnly,
+  onTaskCreated,
+}: TaskManagementProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -80,47 +111,56 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isCommenting, setIsCommenting] = useState(false);
 
-
   const taskForm = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
     defaultValues: { title: '', dueDate: undefined },
   });
-  
+
   const subtaskForm = useForm<z.infer<typeof subtaskSchema>>({
     resolver: zodResolver(subtaskSchema),
     defaultValues: { title: '' },
   });
-  
+
   const commentForm = useForm<z.infer<typeof commentSchema>>({
     resolver: zodResolver(commentSchema),
     defaultValues: { text: '' },
   });
 
   useEffect(() => {
-    const q = query(collection(db, 'tasks'), where('projectId', '==', project.id));
+    const q = query(
+      collection(db, 'tasks'),
+      where('projectId', '==', project.id)
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-      setTasks(fetchedTasks.sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis()));
+      const fetchedTasks = snapshot.docs.map(
+        (doc) => ({ id: doc.id, ...doc.data() } as Task)
+      );
+      setTasks(
+        fetchedTasks.sort(
+          (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis()
+        )
+      );
     });
     return () => unsubscribe();
   }, [project.id]);
 
   useEffect(() => {
     if (selectedTask) {
-        const commentsQuery = query(
-            collection(db, 'tasks', selectedTask.id, 'comments'),
-            orderBy('createdAt', 'asc')
+      const commentsQuery = query(
+        collection(db, 'tasks', selectedTask.id, 'comments'),
+        orderBy('createdAt', 'asc')
+      );
+      const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
+        const fetchedComments = snapshot.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as Comment)
         );
-        const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
-            const fetchedComments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Comment));
-            setComments(fetchedComments);
-        });
-        return () => unsubscribe();
+        setComments(fetchedComments);
+      });
+      return () => unsubscribe();
     } else {
-        setComments([]);
+      setComments([]);
     }
   }, [selectedTask]);
-
 
   const { parentTasks, allTasksCompleted } = useMemo(() => {
     const parentTasksMap = new Map<string, Task>();
@@ -139,16 +179,18 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
 
     for (const [parentId, subtasks] of subtasksMap.entries()) {
       if (parentTasksMap.has(parentId)) {
-        parentTasksMap.get(parentId)!.subtasks = subtasks.sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis());
+        parentTasksMap.get(parentId)!.subtasks = subtasks.sort(
+          (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis()
+        );
       }
     }
-    
+
     const parentTasksArray = Array.from(parentTasksMap.values());
-    const allTasksCompleted = tasks.length > 0 && tasks.every(t => t.status === 'Completed');
+    const allTasksCompleted =
+      tasks.length > 0 && tasks.every((t) => t.status === 'Completed');
 
     return { parentTasks: parentTasksArray, allTasksCompleted };
   }, [tasks]);
-
 
   async function onTaskSubmit(values: z.infer<typeof taskSchema>) {
     if (!user || readOnly) return;
@@ -163,18 +205,28 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
     });
 
     if (result.success) {
-      toast({ title: 'Task Added', description: `"${values.title}" has been added.` });
+      toast({
+        title: 'Task Added',
+        description: `"${values.title}" has been added.`,
+      });
       taskForm.reset();
-       if (result.updatedProjectStatus) {
+      if (result.updatedProjectStatus) {
         onTaskCreated?.();
       }
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.error });
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.error,
+      });
     }
     setIsLoading(false);
   }
 
-  async function handleSubtaskSubmit(values: z.infer<typeof subtaskSchema>, parentId: string) {
+  async function handleSubtaskSubmit(
+    values: z.infer<typeof subtaskSchema>,
+    parentId: string
+  ) {
     if (!user || readOnly) return;
     setIsLoading(true);
 
@@ -187,11 +239,18 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
     });
 
     if (result.success) {
-      toast({ title: 'Subtask Added', description: `"${values.title}" has been added.` });
+      toast({
+        title: 'Subtask Added',
+        description: `"${values.title}" has been added.`,
+      });
       subtaskForm.reset();
       setShowSubtaskInput(null);
     } else {
-      toast({ variant: 'destructive', title: 'Error', description: result.error });
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: result.error,
+      });
     }
     setIsLoading(false);
   }
@@ -201,21 +260,24 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
     setIsCommenting(true);
 
     const result = await addCommentToTask({
-        taskId: selectedTask.id,
-        userId: user.uid,
-        userName: user.name,
-        userImage: user.image,
-        text: values.text,
+      taskId: selectedTask.id,
+      userId: user.uid,
+      userName: user.name,
+      userImage: user.image,
+      text: values.text,
     });
 
     if (result.success) {
-        commentForm.reset();
+      commentForm.reset();
     } else {
-        toast({ variant: 'destructive', title: 'Error', description: "Could not post comment." });
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not post comment.',
+      });
     }
     setIsCommenting(false);
   }
-
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
     if (!user || readOnly) return;
@@ -235,15 +297,16 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
     }
     setIsUpdating(null);
   };
-  
+
   const handleProjectSubmit = async () => {
     if (!user || readOnly) return;
     setIsSubmitting(true);
     const result = await updateProjectStatus(project.id, 'Completed', user.uid);
-     if (result.success) {
+    if (result.success) {
       toast({
         title: 'Project Submitted!',
-        description: 'Your project has been marked as completed and sent for review.',
+        description:
+          'Your project has been marked as completed and sent for review.',
       });
     } else {
       toast({
@@ -253,7 +316,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
       });
     }
     setIsSubmitting(false);
-  }
+  };
 
   const isProjectCompleted = project.status === 'Completed';
 
@@ -268,9 +331,9 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
       onClick={() => setSelectedTask(task)}
     >
       <CardContent className="p-2 flex items-center justify-between gap-2">
-        <div className="flex-1 flex items-center gap-3 min-w-0">
+        <div className="flex-1 flex items-center gap-2 min-w-0">
           {isSubtask && (
-            <CornerDownRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <CornerDownRight className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-1" />
           )}
           <p className="flex-1 truncate font-medium">{task.title}</p>
         </div>
@@ -429,75 +492,72 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
           <Separator />
         </>
       )}
-
       <div className="grid md:grid-cols-2 gap-6 h-[500px]">
-          <ScrollArea className="rounded-md border p-4">
-            <div className="space-y-2">
-              {parentTasks.length > 0 ? (
-                parentTasks.map((task) => (
-                  <div key={task.id} className="space-y-2">
-                    {renderTask(task, false)}
-                    {showSubtaskInput === task.id &&
-                      !readOnly &&
-                      !isProjectCompleted && (
-                        <Form {...subtaskForm}>
-                          <form
-                            onSubmit={subtaskForm.handleSubmit((values) =>
-                              handleSubtaskSubmit(values, task.id)
+        <ScrollArea className="rounded-md border p-4">
+          <div className="space-y-2">
+            {parentTasks.length > 0 ? (
+              parentTasks.map((task) => (
+                <div key={task.id} className="space-y-2">
+                  {renderTask(task, false)}
+                  {showSubtaskInput === task.id &&
+                    !readOnly &&
+                    !isProjectCompleted && (
+                      <Form {...subtaskForm}>
+                        <form
+                          onSubmit={subtaskForm.handleSubmit((values) =>
+                            handleSubtaskSubmit(values, task.id)
+                          )}
+                          className="ml-8 flex items-center gap-2"
+                        >
+                          <FormField
+                            control={subtaskForm.control}
+                            name="title"
+                            render={({ field }) => (
+                              <FormItem className="flex-grow">
+                                <FormControl>
+                                  <Input
+                                    placeholder="Add a new subtask..."
+                                    {...field}
+                                    autoFocus
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
                             )}
-                            className="ml-8 flex items-center gap-2"
+                          />
+                          <Button
+                            type="submit"
+                            disabled={isLoading}
+                            size="icon"
                           >
-                            <FormField
-                              control={subtaskForm.control}
-                              name="title"
-                              render={({ field }) => (
-                                <FormItem className="flex-grow">
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Add a new subtask..."
-                                      {...field}
-                                      autoFocus
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <Button
-                              type="submit"
-                              disabled={isLoading}
-                              size="icon"
-                            >
-                              {isLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Plus className="h-4 w-4" />
-                              )}
-                              <span className="sr-only">Add Subtask</span>
-                            </Button>
-                          </form>
-                        </Form>
-                      )}
-                    {task.subtasks?.map((subtask) =>
-                      renderTask(subtask, true)
+                            {isLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Plus className="h-4 w-4" />
+                            )}
+                            <span className="sr-only">Add Subtask</span>
+                          </Button>
+                        </form>
+                      </Form>
                     )}
-                  </div>
-                ))
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
-                  <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-semibold">
-                    {readOnly ? 'No tasks yet' : 'No tasks created yet'}
-                  </h3>
-                  <p className="mb-4 mt-2 text-sm text-muted-foreground">
-                    {readOnly
-                      ? 'The student has not created any tasks.'
-                      : 'Add your first task to get started.'}
-                  </p>
+                  {task.subtasks?.map((subtask) => renderTask(subtask, true))}
                 </div>
-              )}
-            </div>
-          </ScrollArea>
+              ))
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
+                <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">
+                  {readOnly ? 'No tasks yet' : 'No tasks created yet'}
+                </h3>
+                <p className="mb-4 mt-2 text-sm text-muted-foreground">
+                  {readOnly
+                    ? 'The student has not created any tasks.'
+                    : 'Add your first task to get started.'}
+                </p>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
         <div className="flex flex-col rounded-lg border">
           {selectedTask ? (
             <>
@@ -556,7 +616,10 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
                         render={({ field }) => (
                           <FormItem className="flex-grow">
                             <FormControl>
-                              <Input placeholder="Add a comment..." {...field} />
+                              <Input
+                                placeholder="Add a comment..."
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
