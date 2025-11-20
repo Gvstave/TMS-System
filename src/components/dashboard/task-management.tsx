@@ -134,18 +134,24 @@ export function TaskManagement({
     const projectRef = doc(db, 'projects', initialProject.id);
     const unsubscribe = onSnapshot(projectRef, (doc) => {
       if (doc.exists()) {
-        setLiveProject({ id: doc.id, ...doc.data() } as Project);
+        const data = doc.data();
+        const deadline = data.deadline instanceof Timestamp ? data.deadline : initialProject.deadline;
+        const createdAt = data.createdAt instanceof Timestamp ? data.createdAt : initialProject.createdAt;
+        setLiveProject({ id: doc.id, ...data, deadline, createdAt } as Project);
       } else {
-        // Handle case where project is deleted
         setLiveProject(null);
       }
+    }, (error) => {
+       console.error("Error fetching project: ", error);
+       setLiveProject(initialProject);
     });
     return () => unsubscribe();
   }, [initialProject.id]);
 
 
   useEffect(() => {
-    if (!liveProject) return;
+    if (!liveProject?.id) return;
+    
     setIsLoading(true);
     const q = query(
       collection(db, 'tasks'),
@@ -158,17 +164,43 @@ export function TaskManagement({
       );
       setTasks(fetchedTasks);
       setIsLoading(false);
-    }, (error) => {
+    }, (error: any) => {
       console.error("Error fetching tasks: ", error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: "Could not fetch tasks."
-      });
+       if (error.code === 'failed-precondition' && error.message.includes('index')) {
+        const
+          projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+        const
+          databaseId = "(default)";
+        const collectionId = "tasks";
+        const
+          createIndexURL = `https://console.firebase.google.com/project/${projectId}/firestore/databases/${databaseId}/indexes?create_composite=ClJwcm9qZWN0cy8c2stZGVtby00MDc5MjEvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3Rhc2tzL2luZGV4ZXMvXxABGg0KCXByb2plY3RJZBABGg0KCWNyZWF0ZWRBdBAB`;
+        
+        toast({
+            variant: "destructive",
+            title: "Firestore Index Required",
+            description: (
+            <span>
+              A database index is needed to query tasks.
+              <a href={createIndexURL} target="_blank" rel="noopener noreferrer" className="font-bold underline ml-1">
+                Click here to create it
+              </a>
+              . After creating, refresh the page.
+            </span>
+          ),
+          duration: Infinity,
+        });
+
+      } else {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: "Could not fetch tasks."
+        });
+      }
       setIsLoading(false);
     });
     return () => unsubscribe();
-  }, [liveProject?.id]);
+  }, [liveProject?.id, toast]);
   
   useEffect(() => {
     if (tasks.length > 0) {
@@ -481,7 +513,8 @@ export function TaskManagement({
                           onSelect={field.onChange}
                           disabled={(date) => {
                             const deadline = liveProject?.deadline;
-                            const deadlineDate = deadline instanceof Timestamp ? deadline.toDate() : new Date(deadline);
+                            if (!deadline) return true;
+                            const deadlineDate = deadline instanceof Timestamp ? deadline.toDate() : new Date();
                             return date < new Date() || date > deadlineDate;
                           }}
                           initialFocus
