@@ -152,8 +152,6 @@ export function TaskManagement({
   }, [fetchTasks]);
 
   useEffect(() => {
-    // This effect runs when the tasks list changes.
-    // It ensures a task is always selected if the list is not empty.
     if (tasks.length > 0) {
       const selectedExists = tasks.some(t => t.id === selectedTask?.id);
       if (!selectedExists) {
@@ -343,7 +341,7 @@ export function TaskManagement({
         key={task.id}
         className={cn(
             "w-full cursor-pointer transition-colors", 
-            isSubtask && "ml-12",
+            isSubtask && "ml-[50px] mr-2",
             selectedTask?.id === task.id ? "bg-muted border-primary" : "bg-card hover:bg-muted/50"
         )}
         onClick={() => setSelectedTask(task)}
