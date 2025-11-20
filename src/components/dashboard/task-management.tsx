@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,7 +22,6 @@ import type { Project, Task, TaskStatus, Comment } from '@/lib/types';
 import {
   createTask,
   updateTaskStatus,
-  updateProjectStatus,
   addCommentToTask,
 } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
@@ -99,13 +98,14 @@ const statusConfig: Record<
 };
 
 export function TaskManagement({
-  project,
+  project: initialProject,
   readOnly,
 }: TaskManagementProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [liveProject, setLiveProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmittingTask, setIsSubmittingTask] = useState(false);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -128,13 +128,28 @@ export function TaskManagement({
     resolver: zodResolver(commentSchema),
     defaultValues: { text: '' },
   });
+  
+  useEffect(() => {
+    if (!initialProject.id) return;
+    const projectRef = doc(db, 'projects', initialProject.id);
+    const unsubscribe = onSnapshot(projectRef, (doc) => {
+      if (doc.exists()) {
+        setLiveProject({ id: doc.id, ...doc.data() } as Project);
+      } else {
+        // Handle case where project is deleted
+        setLiveProject(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [initialProject.id]);
 
-  const fetchTasks = () => {
-    if (!project) return;
+
+  useEffect(() => {
+    if (!liveProject) return;
     setIsLoading(true);
     const q = query(
       collection(db, 'tasks'),
-      where('projectId', '==', project.id),
+      where('projectId', '==', liveProject.id),
       orderBy('createdAt', 'asc')
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -152,15 +167,8 @@ export function TaskManagement({
       });
       setIsLoading(false);
     });
-    return unsubscribe;
-  }
-
-  useEffect(() => {
-    const unsubscribe = fetchTasks();
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [project.id]);
+    return () => unsubscribe();
+  }, [liveProject?.id]);
   
   useEffect(() => {
     if (tasks.length > 0) {
@@ -226,11 +234,11 @@ export function TaskManagement({
   }, [tasks]);
 
   async function onTaskSubmit(values: z.infer<typeof taskSchema>) {
-    if (!user || readOnly || !project) return;
+    if (!user || readOnly || !liveProject) return;
     setIsSubmittingTask(true);
 
     const result = await createTask({
-      projectId: project.id,
+      projectId: liveProject.id,
       title: values.title,
       status: 'Pending',
       createdBy: user.uid,
@@ -254,11 +262,11 @@ export function TaskManagement({
   }
 
   async function handleSubtaskSubmit(values: z.infer<typeof subtaskSchema>, parentId: string) {
-    if (!user || readOnly || !project) return;
+    if (!user || readOnly || !liveProject) return;
     setIsSubmittingTask(true);
 
     const result = await createTask({
-      projectId: project.id,
+      projectId: liveProject.id,
       title: values.title,
       status: 'Pending',
       createdBy: user.uid,
@@ -309,26 +317,15 @@ export function TaskManagement({
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
     if (!user || readOnly) return;
     setIsUpdating(taskId);
-    const result = await updateTaskStatus(taskId, newStatus, user.uid);
-    if (result.success) {
-      toast({
-        title: 'Status Updated',
-        description: `Task status changed to "${newStatus}".`,
-      });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: result.error,
-      });
-    }
+    await updateTaskStatus(taskId, newStatus, user.uid);
+    // Don't show toast, real-time updates handle UI change
     setIsUpdating(null);
   };
 
   const handleProjectSubmit = async () => {
-    if (!user || readOnly || !project) return;
+    if (!user || readOnly || !liveProject) return;
     setIsSubmitting(true);
-    const result = await updateProjectStatus(project.id, 'Completed', user.uid);
+    const result = await updateProjectStatus(liveProject.id, 'Completed', user.uid);
     if (result.success) {
       toast({
         title: 'Project Submitted!',
@@ -345,7 +342,7 @@ export function TaskManagement({
     setIsSubmitting(false);
   };
 
-  const isProjectCompleted = project.status === 'Completed';
+  const isProjectCompleted = liveProject?.status === 'Completed';
 
   const renderTask = (task: Task, isSubtask: boolean) => (
     <Card
@@ -424,7 +421,7 @@ export function TaskManagement({
     </Card>
   );
 
-  if (!project) {
+  if (!liveProject) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -482,10 +479,11 @@ export function TaskManagement({
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) =>
-                            date < new Date() ||
-                            date > (project.deadline as Timestamp).toDate()
-                          }
+                          disabled={(date) => {
+                            const deadline = liveProject?.deadline;
+                            const deadlineDate = deadline instanceof Timestamp ? deadline.toDate() : new Date(deadline);
+                            return date < new Date() || date > deadlineDate;
+                          }}
                           initialFocus
                         />
                       </PopoverContent>
@@ -505,7 +503,7 @@ export function TaskManagement({
             </form>
           </Form>
            <div className="flex justify-end">
-              <AITaskSuggester project={project} existingTasks={tasks} onTasksAdded={fetchTasks} />
+              <AITaskSuggester project={liveProject} existingTasks={tasks} onTasksAdded={() => {}} />
            </div>
         </div>
       )}
@@ -631,7 +629,7 @@ export function TaskManagement({
             )}
         </div>
       </div>
-      {!readOnly && project.status !== 'Completed' && (
+      {!readOnly && liveProject.status !== 'Completed' && (
         <DialogFooter className="pt-4">
           <TooltipProvider>
             <Tooltip delayDuration={0}>
@@ -665,7 +663,5 @@ export function TaskManagement({
     </div>
   );
 }
-
-    
 
     
