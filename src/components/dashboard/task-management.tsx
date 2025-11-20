@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,6 +23,7 @@ import {
   createTask,
   updateTaskStatus,
   addCommentToTask,
+  updateProjectStatus,
 } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,6 +136,7 @@ export function TaskManagement({
     const unsubscribe = onSnapshot(projectRef, (doc) => {
       if (doc.exists()) {
         const data = doc.data();
+        // Ensure timestamps are correctly handled
         const deadline = data.deadline instanceof Timestamp ? data.deadline : initialProject.deadline;
         const createdAt = data.createdAt instanceof Timestamp ? data.createdAt : initialProject.createdAt;
         setLiveProject({ id: doc.id, ...data, deadline, createdAt } as Project);
@@ -143,6 +145,7 @@ export function TaskManagement({
       }
     }, (error) => {
        console.error("Error fetching project: ", error);
+       // Fallback to the initial prop on error
        setLiveProject(initialProject);
     });
     return () => unsubscribe();
@@ -167,24 +170,21 @@ export function TaskManagement({
     }, (error: any) => {
       console.error("Error fetching tasks: ", error);
        if (error.code === 'failed-precondition' && error.message.includes('index')) {
-        const
-          projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-        const
-          databaseId = "(default)";
-        const collectionId = "tasks";
-        const
-          createIndexURL = `https://console.firebase.google.com/project/${projectId}/firestore/databases/${databaseId}/indexes?create_composite=ClJwcm9qZWN0cy8c2stZGVtby00MDc5MjEvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL3Rhc2tzL2luZGV4ZXMvXxABGg0KCXByb2plY3RJZBABGg0KCWNyZWF0ZWRBdBAB`;
+        const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+        const databaseId = "(default)";
+        // Correctly construct the URL for creating an index.
+        const createIndexURL = `https://console.firebase.google.com/project/${projectId}/firestore/databases/${databaseId}/indexes?create_composite=tasks`;
         
         toast({
             variant: "destructive",
             title: "Firestore Index Required",
             description: (
             <span>
-              A database index is needed to query tasks.
+              A database index is needed.
               <a href={createIndexURL} target="_blank" rel="noopener noreferrer" className="font-bold underline ml-1">
                 Click here to create it
               </a>
-              . After creating, refresh the page.
+              , then add fields for 'projectId' (Ascending) and 'createdAt' (Ascending). Refresh after creation.
             </span>
           ),
           duration: Infinity,
@@ -208,6 +208,7 @@ export function TaskManagement({
       if (!selectedExists || !selectedTask) {
         setSelectedTask(tasks.find(t => !t.parentId) || tasks[0]);
       } else {
+        // If the selected task was updated, get its new version from the list
         const updatedSelectedTask = tasks.find(t => t.id === selectedTask.id);
         if (updatedSelectedTask) {
           setSelectedTask(updatedSelectedTask);
@@ -514,6 +515,7 @@ export function TaskManagement({
                           disabled={(date) => {
                             const deadline = liveProject?.deadline;
                             if (!deadline) return true;
+                            // Ensure deadline is a Date object before comparison
                             const deadlineDate = deadline instanceof Timestamp ? deadline.toDate() : new Date();
                             return date < new Date() || date > deadlineDate;
                           }}
