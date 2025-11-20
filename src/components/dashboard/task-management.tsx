@@ -107,12 +107,11 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
 
   useEffect(() => {
     if (selectedTask) {
-        const q = query(
-            collection(db, 'comments'),
-            where('taskId', '==', selectedTask.id),
+        const commentsQuery = query(
+            collection(db, 'tasks', selectedTask.id, 'comments'),
             orderBy('createdAt', 'asc')
         );
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
             const fetchedComments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Comment));
             setComments(fetchedComments);
         });
@@ -444,36 +443,34 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
                 )}
                 </div>
             </ScrollArea>
-            {!readOnly && !isProjectCompleted && (
-                <>
-                    <DialogFooter className="pt-4">
-                        <TooltipProvider>
-                            <Tooltip delayDuration={0}>
-                                <TooltipTrigger asChild>
-                                    <div tabIndex={0} className={cn(!allTasksCompleted ? 'cursor-not-allowed' : '')}>
-                                        <Button
-                                            onClick={handleProjectSubmit}
-                                            disabled={!allTasksCompleted || isSubmitting}
-                                            className="w-full md:w-auto"
-                                        >
-                                            {isSubmitting ? (
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Send className="mr-2 h-4 w-4" />
-                                            )}
-                                            Submit Project
-                                        </Button>
-                                    </div>
-                                </TooltipTrigger>
-                                {!allTasksCompleted && (
-                                    <TooltipContent>
-                                        <p>All tasks must be completed before you can submit.</p>
-                                    </TooltipContent>
-                                )}
-                            </Tooltip>
-                        </TooltipProvider>
-                    </DialogFooter>
-                </>
+            {!readOnly && project.status !== 'Completed' && (
+              <DialogFooter className="pt-4">
+                <TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <div tabIndex={0} className={cn(!allTasksCompleted ? 'cursor-not-allowed' : '')}>
+                        <Button
+                            onClick={handleProjectSubmit}
+                            disabled={!allTasksCompleted || isSubmitting}
+                            className="w-full md:w-auto"
+                        >
+                            {isSubmitting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Send className="mr-2 h-4 w-4" />
+                            )}
+                            Submit Project
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    {!allTasksCompleted && (
+                      <TooltipContent>
+                        <p>All tasks must be completed before you can submit.</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              </DialogFooter>
             )}
         </div>
         <div className="flex flex-col rounded-lg border h-[32rem]">

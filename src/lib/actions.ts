@@ -53,23 +53,21 @@ export async function createProject(projectInput: ProjectInputAction) {
 export async function deleteProject(projectId: string, userId: string) {
   try {
     const projectRef = doc(db, 'projects', projectId);
-    const projectSnap = await getDoc(projectRef);
-    const projectTitle = projectSnap.data()?.title || 'a project';
     const batch = writeBatch(db);
 
-    // Find and delete all tasks associated with the project
-    const tasksQuery = query(
-      collection(db, 'tasks'),
-      where('projectId', '==', projectId)
-    );
+    const tasksQuery = query(collection(db, 'tasks'), where('projectId', '==', projectId));
     const tasksSnapshot = await getDocs(tasksQuery);
-    tasksSnapshot.forEach((taskDoc) => {
+
+    for (const taskDoc of tasksSnapshot.docs) {
+      const commentsQuery = query(collection(taskDoc.ref, 'comments'));
+      const commentsSnapshot = await getDocs(commentsQuery);
+      commentsSnapshot.forEach((commentDoc) => {
+        batch.delete(commentDoc.ref);
+      });
       batch.delete(taskDoc.ref);
-    });
-
-    // Delete the project itself
+    }
+    
     batch.delete(projectRef);
-
     await batch.commit();
 
     revalidatePath('/dashboard');
@@ -186,8 +184,10 @@ type CommentInputAction = {
 
 export async function addCommentToTask(commentInput: CommentInputAction) {
     try {
-        await addDoc(collection(db, 'comments'), {
-            ...commentInput,
+        const { taskId, ...commentData } = commentInput;
+        const commentsCollectionRef = collection(db, 'tasks', taskId, 'comments');
+        await addDoc(commentsCollectionRef, {
+            ...commentData,
             createdAt: serverTimestamp(),
         });
         revalidatePath('/dashboard');
