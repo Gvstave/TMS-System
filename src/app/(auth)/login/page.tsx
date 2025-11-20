@@ -1,10 +1,30 @@
 
 'use client';
 import { AuthForm } from '@/components/auth/auth-form';
-import { Suspense } from 'react';
+import { useAuth } from '@/context/auth-context';
+import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
 
 
 function LoginPageContent() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace('/dashboard');
+    }
+  }, [user, loading, router]);
+  
+  if (loading || user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return <AuthForm type="login" />;
 }
 
