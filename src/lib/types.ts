@@ -29,6 +29,7 @@ export type Project = {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   grade?: number;
+  feedback?: string;
 };
 
 export const TaskStatusSchema = z.enum(['Pending', 'In Progress', 'Completed']);

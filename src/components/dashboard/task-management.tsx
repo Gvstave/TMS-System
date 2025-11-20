@@ -418,7 +418,7 @@ export function TaskManagement({
   );
 
   return (
-    <div className="space-y-4 flex flex-col h-full">
+    <div className="space-y-4 flex flex-col h-full overflow-hidden">
       {!readOnly && !isProjectCompleted && (
         <>
           <Form {...taskForm}>
@@ -492,9 +492,9 @@ export function TaskManagement({
           <Separator />
         </>
       )}
-      <div className="flex flex-1 space-x-6 overflow-hidden">
-        <div className="w-3/5 flex flex-col">
-          <ScrollArea className="flex-grow rounded-md border p-4">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-6 overflow-hidden">
+        <div className="md:col-span-3 flex flex-col min-h-0">
+          <ScrollArea className="flex-1 rounded-md border p-4">
             <div className="space-y-2">
               {parentTasks.length > 0 ? (
                 parentTasks.map((task) => (
@@ -560,7 +560,7 @@ export function TaskManagement({
             </div>
           </ScrollArea>
         </div>
-        <div className="w-2/5 flex flex-col rounded-lg border">
+        <div className="md:col-span-2 flex flex-col rounded-lg border min-h-0">
           {selectedTask ? (
             <>
               <div className="p-4 border-b">

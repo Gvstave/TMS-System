@@ -16,6 +16,7 @@ import { CreateProjectDialog } from './create-project-dialog';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteProject } from '@/lib/actions';
+import { ProjectSearch } from './project-search';
 
 interface LecturerDashboardProps {
   currentUser: User;
@@ -25,6 +26,7 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [students, setStudents] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -75,8 +77,13 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
       });
     }
   };
+  
+  const filteredProjects = projects.filter(project =>
+    project.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const renderProjectList = (filteredProjects: Project[]) => {
+
+  const renderProjectList = (displayProjects: Project[]) => {
     if (loading) {
       return (
         <div className="flex justify-center items-center p-8">
@@ -84,21 +91,21 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
         </div>
       );
     }
-    if (filteredProjects.length === 0) {
+    if (displayProjects.length === 0) {
       return (
         <div className="flex h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
           <h3 className="text-lg font-semibold text-muted-foreground">
-            No projects here yet.
+            No projects found.
           </h3>
           <p className="text-sm text-muted-foreground/80">
-            Create a new project to get started.
+            {searchTerm ? 'Try a different search term.' : 'Create a new project to get started.'}
           </p>
         </div>
       );
     }
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredProjects.map((project) => (
+        {displayProjects.map((project) => (
           <ProjectCard
             key={project.id}
             project={project}
@@ -119,6 +126,7 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
         user={currentUser}
         actionSlot={
           <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
+             <ProjectSearch onSearch={setSearchTerm} />
             <CreateProjectDialog
               lecturerId={currentUser.uid}
               students={students}
@@ -137,11 +145,11 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
-          {renderProjectList(projects)}
+          {renderProjectList(filteredProjects)}
         </TabsContent>
         {statuses.map((status) => (
           <TabsContent key={status} value={status} className="space-y-4">
-            {renderProjectList(projects.filter((p) => p.status === status))}
+            {renderProjectList(filteredProjects.filter((p) => p.status === status))}
           </TabsContent>
         ))}
       </Tabs>

@@ -16,6 +16,7 @@ import {
   CircleCheck,
   CircleDot,
   Clock,
+  GraduationCap,
   MoreVertical,
   Trash2,
   Users,
@@ -36,6 +37,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import {
@@ -49,6 +51,7 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 import { useState } from 'react';
+import { GradeProjectDialog } from './grade-project-dialog';
 
 interface ProjectCardProps {
   project: Project;
@@ -75,6 +78,8 @@ export function ProjectCard({
   onProjectUpdate,
 }: ProjectCardProps) {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [isTaskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [isGradeDialogOpen, setGradeDialogOpen] = useState(false);
 
   const getDeadlineDate = (deadline: Project['deadline']): Date => {
     if (deadline instanceof Timestamp) {
@@ -137,12 +142,20 @@ export function ProjectCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DialogTrigger asChild>
-                <DropdownMenuItem>
-                  <View className="mr-2 h-4 w-4" />
-                  View Tasks
-                </DropdownMenuItem>
-              </DialogTrigger>
+              <DropdownMenuItem onSelect={() => setTaskDialogOpen(true)}>
+                <View className="mr-2 h-4 w-4" />
+                View Progress
+              </DropdownMenuItem>
+              {project.status === 'Completed' && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => setGradeDialogOpen(true)}>
+                    <GraduationCap className="mr-2 h-4 w-4" />
+                    Grade Project
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                 onSelect={() => setShowDeleteAlert(true)}
@@ -173,8 +186,10 @@ export function ProjectCard({
             />
             {project.status}
           </Badge>
-          {userRole === 'lecturer' && project.grade && (
-            <Badge>Grade: {project.grade}%</Badge>
+          {(project.grade || project.grade === 0) && (
+            <Badge variant={project.grade < 50 ? 'destructive' : 'secondary'} className="font-semibold">
+              Grade: {project.grade}%
+            </Badge>
           )}
         </div>
       </CardContent>
@@ -184,38 +199,44 @@ export function ProjectCard({
           <span className="truncate">{assignedToNames}</span>
         </div>
         {userRole === 'student' && (
-          <DialogTrigger asChild>
-            <Button variant="outline" className="w-full !mt-4">
-              Manage Tasks
-            </Button>
-          </DialogTrigger>
+          <Button
+            variant="outline"
+            className="w-full !mt-4"
+            onClick={() => setTaskDialogOpen(true)}
+          >
+            Manage Tasks
+          </Button>
         )}
       </CardFooter>
     </Card>
   );
 
-  const dialogTitle =
-    userRole === 'lecturer'
-      ? `${project.title} - Task Progress`
-      : `${project.title} - Tasks`;
-  const dialogDescription =
-    userRole === 'lecturer'
-      ? `Viewing tasks for ${assignedToNames}.`
-      : 'Break down your project into smaller tasks.';
-
   return (
-    <Dialog>
-      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
-        {userRole === 'lecturer' ? cardContent : <DialogTrigger asChild>{cardContent}</DialogTrigger>}
-        <DialogContent className="sm:max-w-2xl">
+    <>
+      {cardContent}
+      
+      {/* Task Management Dialog */}
+      <Dialog open={isTaskDialogOpen} onOpenChange={setTaskDialogOpen}>
+        <DialogContent className="max-w-4xl h-[90vh]">
           <DialogHeader>
-            <DialogTitle className="font-headline">{dialogTitle}</DialogTitle>
+            <DialogTitle className="font-headline">{project.title} - Tasks</DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {dialogDescription}
+              {userRole === 'lecturer' ? `Viewing tasks for ${assignedToNames}.` : 'Break down your project into smaller tasks.'}
             </p>
           </DialogHeader>
           <TaskManagement project={project} readOnly={userRole === 'lecturer'} onTaskCreated={onProjectUpdate} />
         </DialogContent>
+      </Dialog>
+
+      {/* Grade Project Dialog */}
+      {userRole === 'lecturer' && (
+        <Dialog open={isGradeDialogOpen} onOpenChange={setGradeDialogOpen}>
+          <GradeProjectDialog project={project} students={students} closeDialog={() => setGradeDialogOpen(false)} />
+        </Dialog>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -240,6 +261,6 @@ export function ProjectCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Dialog>
+    </>
   );
 }
