@@ -66,7 +66,7 @@ export function AiLecturerPrioritizer({ projects, students }: AiLecturerPrioriti
 
       const studentWorkloads = students.map(student => ({
         studentId: student.uid,
-        taskCount: projects.filter(t => t.assignedTo.some(s => s.id === student.uid) && t.status !== 'Completed').length,
+        taskCount: projects.filter(t => t.assignedTo.some(s => s === student.uid) && t.status !== 'Completed').length,
       }));
 
       const input = {
@@ -75,7 +75,7 @@ export function AiLecturerPrioritizer({ projects, students }: AiLecturerPrioriti
           title: t.title,
           description: t.description,
           deadline: getDeadlineAsDate(t.deadline).toISOString().split('T')[0],
-          studentId: t.assignedTo.map(s => s.id).join(', '), // Join IDs if multiple
+          studentId: t.assignedTo.join(', '), // Join IDs if multiple
         })),
         studentWorkloads,
       };
