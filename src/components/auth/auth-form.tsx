@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,8 +7,9 @@ import * as z from 'zod';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  getAuth,
 } from 'firebase/auth';
-import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDocs, query, setDoc, where, getFirestore } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -36,11 +38,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { auth, db } from '@/lib/firebase';
+import { app } from '@/lib/firebase';
 import { Logo } from '@/components/logo';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { User } from '@/lib/types';
+
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),

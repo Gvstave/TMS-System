@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -6,8 +7,9 @@ import {
   query,
   where,
   onSnapshot,
+  getFirestore,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { app } from '@/lib/firebase';
 import type { Project, User } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectCard } from './project-card';
@@ -15,6 +17,7 @@ import { WelcomeHeader } from './welcome-header';
 import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
+const db = getFirestore(app);
 
 interface StudentDashboardProps {
   currentUser: User;

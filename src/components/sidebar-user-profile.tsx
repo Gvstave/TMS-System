@@ -1,11 +1,14 @@
+
 'use client';
 
 import { useAuth } from '@/context/auth-context';
 import { Button } from './ui/button';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { signOut, getAuth } from 'firebase/auth';
+import { app } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { LogOut, UserCircle } from 'lucide-react';
+
+const auth = getAuth(app);
 
 export function SidebarUserProfile() {
   const { user } = useAuth();

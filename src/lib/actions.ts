@@ -1,8 +1,10 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { db } from './firebase';
+import { app } from './firebase';
 import {
+  getFirestore,
   addDoc,
   collection,
   doc,
@@ -17,6 +19,8 @@ import {
   deleteDoc,
 } from 'firebase/firestore';
 import type { Project, Task, ProjectStatus, AssignedStudent, Comment } from './types';
+
+const db = getFirestore(app);
 
 // The input for the server action must be a plain object.
 // The deadline is passed as an ISO string.

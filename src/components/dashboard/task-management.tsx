@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -13,8 +14,9 @@ import {
   orderBy,
   where,
   doc,
+  getFirestore,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { app } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import type { Project, Task, TaskStatus, Comment } from '@/lib/types';
 import {
@@ -67,6 +69,8 @@ import { Calendar } from '../ui/calendar';
 import { ScrollArea } from '../ui/scroll-area';
 import { AITaskSuggester } from './ai-task-suggester';
 
+const db = getFirestore(app);
+
 const taskSchema = z.object({
   title: z.string().min(3, 'Task title must be at least 3 characters.'),
   dueDate: z.date().optional(),
@@ -83,7 +87,6 @@ const commentSchema = z.object({
 interface TaskManagementProps {
   project: Project;
   readOnly: boolean;
-  onTaskCreated?: () => void;
 }
 
 const statusConfig: Record<
@@ -96,9 +99,8 @@ const statusConfig: Record<
 };
 
 export function TaskManagement({
-  project,
+  project: initialProject,
   readOnly,
-  onTaskCreated,
 }: TaskManagementProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -128,11 +130,11 @@ export function TaskManagement({
   });
 
   const fetchTasks = useCallback(() => {
-    if (!project) return;
+    if (!initialProject) return;
     setIsLoading(true);
     const q = query(
       collection(db, 'tasks'),
-      where('projectId', '==', project.id),
+      where('projectId', '==', initialProject.id),
       orderBy('createdAt', 'asc')
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -146,7 +148,7 @@ export function TaskManagement({
       setIsLoading(false);
     });
     return unsubscribe;
-  }, [project]);
+  }, [initialProject]);
 
   useEffect(() => {
     const unsubscribe = fetchTasks();
@@ -219,11 +221,11 @@ export function TaskManagement({
   }, [tasks]);
 
   async function onTaskSubmit(values: z.infer<typeof taskSchema>) {
-    if (!user || readOnly || !project) return;
+    if (!user || readOnly || !initialProject) return;
     setIsSubmittingTask(true);
 
     const result = await createTask({
-      projectId: project.id,
+      projectId: initialProject.id,
       title: values.title,
       status: 'Pending',
       createdBy: user.uid,
@@ -236,7 +238,6 @@ export function TaskManagement({
         description: `"${values.title}" has been added.`,
       });
       taskForm.reset();
-      if (onTaskCreated) onTaskCreated();
     } else {
       toast({
         variant: 'destructive',
@@ -248,11 +249,11 @@ export function TaskManagement({
   }
 
   async function handleSubtaskSubmit(values: z.infer<typeof subtaskSchema>, parentId: string) {
-    if (!user || readOnly || !project) return;
+    if (!user || readOnly || !initialProject) return;
     setIsSubmittingTask(true);
 
     const result = await createTask({
-      projectId: project.id,
+      projectId: initialProject.id,
       title: values.title,
       status: 'Pending',
       createdBy: user.uid,
@@ -320,9 +321,9 @@ export function TaskManagement({
   };
 
   const handleProjectSubmit = async () => {
-    if (!user || readOnly || !project) return;
+    if (!user || readOnly || !initialProject) return;
     setIsSubmitting(true);
-    const result = await updateProjectStatus(project.id, 'Completed', user.uid);
+    const result = await updateProjectStatus(initialProject.id, 'Completed', user.uid);
     if (result.success) {
       toast({
         title: 'Project Submitted!',
@@ -339,7 +340,7 @@ export function TaskManagement({
     setIsSubmitting(false);
   };
 
-  const isProjectCompleted = project.status === 'Completed';
+  const isProjectCompleted = initialProject.status === 'Completed';
 
   const renderTask = (task: Task, isSubtask: boolean) => (
     <Card
@@ -418,7 +419,7 @@ export function TaskManagement({
     </Card>
   );
 
-  if (!project) {
+  if (!initialProject) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -478,7 +479,7 @@ export function TaskManagement({
                           onSelect={field.onChange}
                           disabled={(date) =>
                             date < new Date() ||
-                            date > (project.deadline as Timestamp).toDate()
+                            date > (initialProject.deadline as Timestamp).toDate()
                           }
                           initialFocus
                         />
@@ -499,7 +500,7 @@ export function TaskManagement({
             </form>
           </Form>
            <div className="flex justify-end">
-              <AITaskSuggester project={project} existingTasks={tasks} onTasksAdded={fetchTasks} />
+              <AITaskSuggester project={initialProject} existingTasks={tasks} onTasksAdded={fetchTasks} />
            </div>
         </div>
       )}
@@ -625,7 +626,7 @@ export function TaskManagement({
             )}
         </div>
       </div>
-      {!readOnly && project.status !== 'Completed' && (
+      {!readOnly && initialProject.status !== 'Completed' && (
         <DialogFooter className="pt-4">
           <TooltipProvider>
             <Tooltip delayDuration={0}>

@@ -8,9 +8,9 @@ import React, {
   useContext,
   ReactNode,
 } from 'react';
-import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { User as FirebaseUser, onAuthStateChanged, getAuth } from 'firebase/auth';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
 import type { User } from '@/lib/types';
 
 interface AuthContextType {
@@ -31,6 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const auth = getAuth(app);
+    const db = getFirestore(app);
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser);
       if (fbUser) {
