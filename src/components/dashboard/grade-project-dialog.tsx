@@ -30,7 +30,7 @@ import { gradeProject } from '@/lib/actions';
 import { db } from '@/lib/firebase';
 import type { Project, Task, User } from '@/lib/types';
 import { generateFeedback } from '@/ai/flows/feedback-flow';
-import { Slider } from '../ui/slider';
+import { Slider } from '@/components/ui/slider';
 
 const gradeSchema = z.object({
   grade: z.coerce
