@@ -14,6 +14,7 @@ import { z } from 'genkit';
 const BreakdownProjectInputSchema = z.object({
   title: z.string().describe('The title of the project.'),
   description: z.string().describe('The description of the project.'),
+  existingTasks: z.array(z.string()).optional().describe('A list of tasks that have already been created.'),
 });
 export type BreakdownProjectInput = z.infer<typeof BreakdownProjectInputSchema>;
 
@@ -38,7 +39,16 @@ const prompt = ai.definePrompt({
   output: { schema: BreakdownProjectOutputSchema },
   prompt: `You are an expert project manager for academic settings. Your goal is to break down a project into a list of actionable tasks for students.
 
-  Based on the project title and description below, generate a list of 3-5 concise task titles. The tasks should be logical steps to complete the project.
+  Based on the project title and description below, generate a list of 3-5 concise task titles.
+
+  {{#if existingTasks}}
+  The project already has the following tasks:
+  {{#each existingTasks}}
+  - {{this}}
+  {{/each}}
+  
+  Generate new, distinct tasks that represent the next logical steps to complete the project. Do not repeat any of the existing tasks.
+  {{/if}}
 
   Project Title: {{{title}}}
   Project Description: {{{description}}}

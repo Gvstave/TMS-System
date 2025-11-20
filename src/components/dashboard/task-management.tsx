@@ -66,6 +66,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { Calendar } from '../ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { ScrollArea } from '../ui/scroll-area';
+import { AITaskSuggester } from './ai-task-suggester';
 
 const taskSchema = z.object({
   title: z.string().min(3, 'Task title must be at least 3 characters.'),
@@ -126,7 +127,8 @@ export function TaskManagement({
     defaultValues: { text: '' },
   });
 
-  useEffect(() => {
+  const fetchTasks = React.useCallback(() => {
+    setIsLoading(true);
     const q = query(
       collection(db, 'tasks'),
       where('projectId', '==', project.id)
@@ -139,11 +141,24 @@ export function TaskManagement({
           (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis()
       );
       setTasks(sortedTasks);
-      if (!selectedTask && sortedTasks.length > 0) {
+      
+      // If a task was selected, keep it selected, otherwise select the first one
+      if (selectedTask) {
+        const updatedSelectedTask = sortedTasks.find(t => t.id === selectedTask.id);
+        setSelectedTask(updatedSelectedTask || (sortedTasks.length > 0 ? sortedTasks[0] : null));
+      } else if (sortedTasks.length > 0) {
         setSelectedTask(sortedTasks[0]);
+      } else {
+        setSelectedTask(null);
       }
+
       setIsLoading(false);
     });
+    return unsubscribe;
+  }, [project.id, selectedTask]);
+
+  useEffect(() => {
+    const unsubscribe = fetchTasks();
     return () => unsubscribe();
   }, [project.id]);
 
@@ -216,6 +231,7 @@ export function TaskManagement({
       if (result.updatedProjectStatus) {
         onTaskCreated?.();
       }
+      fetchTasks();
     } else {
       toast({
         variant: 'destructive',
@@ -245,6 +261,7 @@ export function TaskManagement({
       });
       subtaskForm.reset();
       setShowSubtaskInput(null);
+      fetchTasks();
     } else {
       toast({
         variant: 'destructive',
@@ -289,6 +306,7 @@ export function TaskManagement({
         title: 'Status Updated',
         description: `Task status changed to "${newStatus}".`,
       });
+      fetchTasks();
     } else {
       toast({
         variant: 'destructive',
@@ -399,7 +417,7 @@ export function TaskManagement({
   );
 
   return (
-    <div className="flex flex-col h-full space-y-4">
+    <div className="flex h-full flex-col space-y-4">
       {!readOnly && !isProjectCompleted && (
         <>
           <Form {...taskForm}>
@@ -470,14 +488,17 @@ export function TaskManagement({
               </Button>
             </form>
           </Form>
+           <div className="flex justify-end">
+              <AITaskSuggester project={project} existingTasks={tasks} onTasksAdded={fetchTasks} />
+           </div>
           <Separator />
         </>
       )}
 
-      <div className="flex-1 grid grid-cols-2 gap-6 items-start min-h-[400px]">
-        <div className="flex flex-col h-full space-y-2 rounded-lg border p-2">
+      <div className="flex flex-1 flex-col space-y-4 md:flex-row md:space-x-6 md:space-y-0">
+        <div className="flex w-full flex-col space-y-2 md:w-3/5">
            {parentTasks.length === 0 && !isLoading && (
-                 <div className="flex h-full flex-col items-center justify-center rounded-lg bg-muted/50 p-12 text-center">
+                 <div className="flex h-full flex-col items-center justify-center rounded-lg border bg-muted/50 p-12 text-center">
                     <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
                     <h3 className="mt-4 text-lg font-semibold">
                         {readOnly ? 'No tasks yet' : 'No tasks created yet'}
@@ -485,11 +506,11 @@ export function TaskManagement({
                     <p className="mb-4 mt-2 text-sm text-muted-foreground">
                         {readOnly
                         ? 'The student has not created any tasks.'
-                        : 'Add your first task to get started.'}
+                        : 'Add your first task or use the AI generator to get started.'}
                     </p>
                 </div>
             )}
-            <ScrollArea className="flex-1 w-full">
+            <ScrollArea className="flex-1 w-full rounded-md border">
                 <div className="space-y-2 p-2">
                     {parentTasks.map((task) => (
                     <div key={task.id} className="space-y-2">
@@ -523,7 +544,7 @@ export function TaskManagement({
                  </div>
             </ScrollArea>
         </div>
-        <div className="rounded-lg border h-full flex flex-col">
+        <div className="flex h-full w-full flex-col rounded-lg border md:w-2/5">
             {selectedTask ? (
                 <>
                     <div className="p-4 border-b">
