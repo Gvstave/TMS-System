@@ -154,13 +154,13 @@ export function TaskManagement({
   useEffect(() => {
     if (tasks.length > 0) {
       const selectedExists = tasks.some(t => t.id === selectedTask?.id);
-      if (!selectedExists) {
-        setSelectedTask(tasks[0]);
+      if (!selectedExists || !selectedTask) {
+        setSelectedTask(tasks.find(t => !t.parentId) || tasks[0]);
       }
     } else {
       setSelectedTask(null);
     }
-  }, [tasks, selectedTask?.id]);
+  }, [tasks, selectedTask]);
 
   useEffect(() => {
     if (selectedTask) {
@@ -340,14 +340,13 @@ export function TaskManagement({
     <Card
         key={task.id}
         className={cn(
-            "w-full cursor-pointer transition-colors", 
-            isSubtask && "ml-4 mr-2",
-            selectedTask?.id === task.id ? "bg-muted border-primary" : "bg-card hover:bg-muted/50"
+            "w-full cursor-pointer transition-colors bg-card", 
+            selectedTask?.id === task.id ? "bg-muted border-primary" : "hover:bg-muted/50"
         )}
         onClick={() => setSelectedTask(task)}
     >
-      <CardContent className={cn("flex items-center justify-between", isSubtask ? "p-1.5" : "p-2.5")}>
-        <p className={cn("flex-1 font-medium line-clamp-1", isSubtask ? "text-xs" : "text-sm")}>{task.title}</p>
+      <CardContent className={cn("flex items-center justify-between p-2.5", isSubtask && "pl-12 pr-2.5")}>
+        <p className={cn("flex-1 font-medium line-clamp-1 text-sm", isSubtask && "text-xs")}>{task.title}</p>
         <div className="flex items-center gap-2">
             {task.dueDate && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -359,8 +358,8 @@ export function TaskManagement({
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
-                                <MessageSquarePlus className="h-3 w-3" />
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
+                                <MessageSquarePlus className="h-3.5 w-3.5" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -376,7 +375,7 @@ export function TaskManagement({
             }
             disabled={isUpdating === task.id || readOnly || isProjectCompleted}
           >
-            <SelectTrigger className={cn("w-[140px] text-xs", isSubtask ? "h-7" : "h-8")}>
+            <SelectTrigger className={cn("w-[140px] text-xs h-8", isSubtask && "h-7")}>
               <SelectValue>
                 <div className="flex items-center gap-2">
                   {isUpdating === task.id ? (
@@ -493,9 +492,9 @@ export function TaskManagement({
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0 flex-1">
-        <div className="flex flex-col space-y-2">
+        <div className="flex flex-col space-y-2 rounded-md border p-2">
            {parentTasks.length === 0 && !isLoading && (
-                 <div className="flex h-full flex-col items-center justify-center rounded-lg border bg-muted/50 p-12 text-center">
+                 <div className="flex h-full flex-col items-center justify-center rounded-lg bg-muted/50 p-12 text-center">
                     <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
                     <h3 className="mt-4 text-lg font-semibold">
                         {readOnly ? 'No tasks yet' : 'No tasks created yet'}
@@ -512,10 +511,10 @@ export function TaskManagement({
                     <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
             )}
-            <ScrollArea className="flex-1 rounded-md border">
+            <ScrollArea className="flex-1">
                 <div className="space-y-2 p-2">
                     {parentTasks.map((task) => (
-                    <div key={task.id} className="space-y-2 overflow-hidden">
+                    <div key={task.id} className="space-y-1 overflow-hidden">
                         {renderTask(task, false)}
                         {showSubtaskInput === task.id && !readOnly && !isProjectCompleted && (
                             <Form {...subtaskForm}>
@@ -648,4 +647,5 @@ export function TaskManagement({
   );
 }
 
+    
     
