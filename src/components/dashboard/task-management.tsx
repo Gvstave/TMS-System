@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -127,7 +127,7 @@ export function TaskManagement({
     defaultValues: { text: '' },
   });
 
-  const fetchTasks = React.useCallback(() => {
+  const fetchTasks = useCallback(() => {
     setIsLoading(true);
     const q = query(
       collection(db, 'tasks'),
@@ -152,20 +152,15 @@ export function TaskManagement({
   }, [fetchTasks]);
 
   useEffect(() => {
-    // This effect handles setting the selected task when the tasks list changes.
-    // It's separate from fetching to avoid dependency loops.
-    if (!selectedTask && tasks.length > 0) {
-      // If nothing is selected, select the first task.
-      setSelectedTask(tasks[0]);
+    if (tasks.length > 0 && !selectedTask) {
+        setSelectedTask(tasks[0]);
     } else if (selectedTask) {
-      // If a task is selected, check if it still exists in the updated list.
-      const updatedSelectedTask = tasks.find(t => t.id === selectedTask.id);
-      if (!updatedSelectedTask) {
-        // If the selected task was deleted, select the new first task or null.
-        setSelectedTask(tasks.length > 0 ? tasks[0] : null);
-      }
+        const stillExists = tasks.find(t => t.id === selectedTask.id);
+        if (!stillExists) {
+            setSelectedTask(tasks.length > 0 ? tasks[0] : null);
+        }
     }
-  }, [tasks, selectedTask]);
+}, [tasks, selectedTask]);
 
   useEffect(() => {
     if (selectedTask) {
@@ -236,7 +231,6 @@ export function TaskManagement({
       if (result.updatedProjectStatus) {
         onTaskCreated?.();
       }
-      // fetchTasks() is not needed here, onSnapshot will trigger a refresh
     } else {
       toast({
         variant: 'destructive',
@@ -521,7 +515,7 @@ export function TaskManagement({
             <ScrollArea className="flex-1 w-full rounded-md border">
                 <div className="space-y-2 p-2">
                     {parentTasks.map((task) => (
-                    <div key={task.id} className="space-y-2">
+                    <div key={task.id} className="space-y-2 overflow-hidden">
                         {renderTask(task, false)}
                         {showSubtaskInput === task.id && !readOnly && !isProjectCompleted && (
                             <Form {...subtaskForm}>
@@ -546,7 +540,9 @@ export function TaskManagement({
                                 </form>
                             </Form>
                         )}
-                        {task.subtasks?.map((subtask) => renderTask(subtask, true))}
+                        <div className="flex flex-col space-y-2">
+                            {task.subtasks?.map((subtask) => renderTask(subtask, true))}
+                        </div>
                     </div>
                     ))}
                  </div>
@@ -651,3 +647,5 @@ export function TaskManagement({
     </div>
   );
 }
+
+    
