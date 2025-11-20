@@ -10,9 +10,10 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { LayoutDashboard, Home } from 'lucide-react';
-import { UserNav } from './user-nav';
 import { Logo } from './logo';
 import { usePathname } from 'next/navigation';
+import { SidebarUserProfile } from './sidebar-user-profile';
+import { Separator } from './ui/separator';
 
 export function MainSidebar() {
   const pathname = usePathname();
@@ -31,15 +32,19 @@ export function MainSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="/dashboard" isActive={pathname.startsWith('/dashboard')}>
+            <SidebarMenuButton
+              href="/dashboard"
+              isActive={pathname.startsWith('/dashboard')}
+            >
               <LayoutDashboard />
               Dashboard
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
+      <Separator />
       <SidebarFooter>
-        <UserNav />
+        <SidebarUserProfile />
       </SidebarFooter>
     </Sidebar>
   );
