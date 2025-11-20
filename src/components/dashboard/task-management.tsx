@@ -83,6 +83,7 @@ interface TaskManagementProps {
   project: Project;
   readOnly: boolean;
   onProjectUpdate?: () => void;
+  onTaskCreated?: () => void;
 }
 
 const statusConfig: Record<
@@ -98,6 +99,7 @@ export function TaskManagement({
   project,
   readOnly,
   onProjectUpdate,
+  onTaskCreated,
 }: TaskManagementProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -232,8 +234,8 @@ export function TaskManagement({
         description: `"${values.title}" has been added.`,
       });
       taskForm.reset();
-      if (result.updatedProjectStatus && onProjectUpdate) {
-        onProjectUpdate();
+      if (result.updatedProjectStatus && onTaskCreated) {
+        onTaskCreated();
       }
     } else {
       toast({
@@ -264,8 +266,8 @@ export function TaskManagement({
       });
       subtaskForm.reset();
       setShowSubtaskInput(null);
-      if (result.updatedProjectStatus && onProjectUpdate) {
-        onProjectUpdate();
+      if (result.updatedProjectStatus && onTaskCreated) {
+        onTaskCreated();
       }
     } else {
       toast({
@@ -330,6 +332,7 @@ export function TaskManagement({
         description:
           'Your project has been marked as completed and sent for review.',
       });
+      if(onProjectUpdate) onProjectUpdate();
     } else {
       toast({
         variant: 'destructive',
@@ -520,7 +523,7 @@ export function TaskManagement({
             <ScrollArea className="flex-1">
                 <div className="space-y-2 p-2">
                     {parentTasks.map((task) => (
-                    <div key={task.id} className="space-y-1 overflow-hidden">
+                    <div key={task.id} className="space-y-1">
                         {renderTask(task, false)}
                         {showSubtaskInput === task.id && !readOnly && !isProjectCompleted && (
                             <div className='flex justify-end'>
