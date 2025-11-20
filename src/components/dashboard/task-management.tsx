@@ -41,6 +41,7 @@ const taskSchema = z.object({
 interface TaskManagementProps {
   project: Project;
   readOnly: boolean;
+  onTaskCreated?: () => void;
 }
 
 const statusConfig: Record<
@@ -53,7 +54,7 @@ const statusConfig: Record<
 };
 
 
-export function TaskManagement({ project, readOnly }: TaskManagementProps) {
+export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagementProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -90,6 +91,9 @@ export function TaskManagement({ project, readOnly }: TaskManagementProps) {
     if (result.success) {
       toast({ title: 'Task Added', description: `"${values.title}" has been added.` });
       form.reset();
+       if (result.updatedProjectStatus) {
+        onTaskCreated?.();
+      }
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error });
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   collection,
   query,
@@ -24,9 +24,10 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
   const [students, setStudents] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchProjects = useCallback(() => {
     if (!currentUser?.uid) return;
 
+    setLoading(true);
     const q = query(
       collection(db, 'projects'),
       where('assignedTo', 'array-contains', currentUser.uid)
@@ -50,6 +51,13 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
       }
     );
     
+    return unsubscribeProjects;
+  }, [currentUser.uid]);
+
+
+  useEffect(() => {
+    const unsubscribeProjects = fetchProjects();
+    
     // Fetch all student users to resolve names in the project card
     const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
     const unsubscribeStudents = onSnapshot(studentsQuery, (snapshot) => {
@@ -58,10 +66,10 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
     });
 
     return () => {
-      unsubscribeProjects();
+      if (unsubscribeProjects) unsubscribeProjects();
       unsubscribeStudents();
     };
-  }, [currentUser]);
+  }, [currentUser, fetchProjects]);
 
   const renderProjectList = (filteredProjects: Project[]) => {
     if (loading) {
@@ -91,6 +99,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
             project={project}
             userRole="student"
             students={students}
+            onProjectUpdate={fetchProjects}
           />
         ))}
       </div>

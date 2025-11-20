@@ -55,6 +55,7 @@ interface ProjectCardProps {
   userRole: 'lecturer' | 'student';
   students?: User[];
   onDeleteProject?: (projectId: string) => void;
+  onProjectUpdate?: () => void;
 }
 
 const statusConfig: Record<
@@ -71,6 +72,7 @@ export function ProjectCard({
   userRole,
   students = [],
   onDeleteProject,
+  onProjectUpdate,
 }: ProjectCardProps) {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
@@ -212,7 +214,7 @@ export function ProjectCard({
               {dialogDescription}
             </p>
           </DialogHeader>
-          <TaskManagement project={project} readOnly={userRole === 'lecturer'} />
+          <TaskManagement project={project} readOnly={userRole === 'lecturer'} onTaskCreated={onProjectUpdate} />
         </DialogContent>
         <AlertDialogContent>
           <AlertDialogHeader>
