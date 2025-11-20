@@ -258,285 +258,365 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
   const isProjectCompleted = project.status === 'Completed';
 
   const renderTask = (task: Task, isSubtask: boolean) => (
-    <Card 
-        key={task.id} 
-        className={cn(
-            "cursor-pointer transition-all hover:bg-muted/50",
-            isSubtask && "ml-6",
-            selectedTask?.id === task.id && "bg-muted border-primary"
-        )}
-        onClick={() => setSelectedTask(task)}
+    <Card
+      key={task.id}
+      className={cn(
+        'cursor-pointer transition-all hover:bg-muted/50',
+        isSubtask && 'ml-6',
+        selectedTask?.id === task.id && 'bg-muted border-primary'
+      )}
+      onClick={() => setSelectedTask(task)}
     >
-        <CardContent className="p-3 flex items-center justify-between gap-2">
-            <div className="flex-1 flex items-center gap-2 min-w-0">
-                {isSubtask && <CornerDownRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
-                <p className="flex-1 truncate font-medium">{task.title}</p>
+      <CardContent className="p-2 flex items-center justify-between gap-2">
+        <div className="flex-1 flex items-center gap-3 min-w-0">
+          {isSubtask && (
+            <CornerDownRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          )}
+          <p className="flex-1 truncate font-medium">{task.title}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {task.dueDate && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <CalendarIcon className="h-3 w-3" />
+              <span>
+                {format((task.dueDate as Timestamp).toDate(), 'MMM d')}
+              </span>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-                {task.dueDate && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <CalendarIcon className="h-3 w-3" />
-                        <span>{format((task.dueDate as Timestamp).toDate(), 'MMM d')}</span>
+          )}
+          {!isSubtask && !readOnly && !isProjectCompleted && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSubtaskInput(
+                        (current) => (current === task.id ? null : task.id)
+                      );
+                    }}
+                  >
+                    <MessageSquarePlus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Add subtask</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <Select
+            value={task.status}
+            onValueChange={(newStatus: TaskStatus) =>
+              handleStatusChange(task.id, newStatus)
+            }
+            disabled={isUpdating === task.id || readOnly || isProjectCompleted}
+          >
+            <SelectTrigger
+              className="w-[150px] flex-shrink-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <SelectValue>
+                <div className="flex items-center gap-2">
+                  {isUpdating === task.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    React.createElement(statusConfig[task.status].icon, {
+                      className: cn(
+                        'h-4 w-4',
+                        statusConfig[task.status].color
+                      ),
+                    })
+                  )}
+                  <span>{task.status}</span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {Object.keys(statusConfig).map((status) => {
+                const Icon = statusConfig[status as TaskStatus].icon;
+                const color = statusConfig[status as TaskStatus].color;
+                return (
+                  <SelectItem key={status} value={status}>
+                    <div className="flex items-center gap-2">
+                      <Icon className={cn('h-4 w-4', color)} />
+                      <span>{status}</span>
                     </div>
-                )}
-                {!isSubtask && !readOnly && !isProjectCompleted && (
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
-                                    <MessageSquarePlus className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Add subtask</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                )}
-                <Select
-                    value={task.status}
-                    onValueChange={(newStatus: TaskStatus) => handleStatusChange(task.id, newStatus)}
-                    disabled={isUpdating === task.id || readOnly || isProjectCompleted}
-                >
-                    <SelectTrigger className="w-[150px] flex-shrink-0" onClick={e => e.stopPropagation()}>
-                        <SelectValue>
-                            <div className="flex items-center gap-2">
-                                {isUpdating === task.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    React.createElement(statusConfig[task.status].icon, {
-                                        className: cn('h-4 w-4', statusConfig[task.status].color),
-                                    })
-                                )}
-                                <span>{task.status}</span>
-                            </div>
-                        </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {Object.keys(statusConfig).map((status) => {
-                            const Icon = statusConfig[status as TaskStatus].icon;
-                            const color = statusConfig[status as TaskStatus].color;
-                            return (
-                            <SelectItem key={status} value={status}>
-                                <div className="flex items-center gap-2">
-                                <Icon className={cn('h-4 w-4', color)} />
-                                <span>{status}</span>
-                                </div>
-                            </SelectItem>
-                            );
-                        })}
-                    </SelectContent>
-                </Select>
-            </div>
-        </CardContent>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+      </CardContent>
     </Card>
-  )
+  );
 
   return (
-    <div className="grid md:grid-cols-2 gap-6 items-start">
-        <div className="space-y-4">
-            {!readOnly && !isProjectCompleted && (
-                <>
-                    <Form {...taskForm}>
-                        <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="flex items-start gap-2">
-                            <FormField
-                                control={taskForm.control}
-                                name="title"
-                                render={({ field }) => (
-                                <FormItem className="flex-grow">
-                                    <FormControl>
-                                    <Input placeholder="Add a new task..." {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={taskForm.control}
-                                name="dueDate"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                            <FormControl>
-                                                <Button
-                                                    variant={'outline'}
-                                                    className={cn(
-                                                        'w-[150px] pl-3 text-left font-normal',
-                                                        !field.value && 'text-muted-foreground'
-                                                    )}
-                                                    >
-                                                    {field.value ? (
-                                                        format(field.value, 'MMM d')
-                                                    ) : (
-                                                        <span>Set due date</span>
-                                                    )}
-                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                </Button>
-                                            </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                                mode="single"
-                                                selected={field.value}
-                                                onSelect={field.onChange}
-                                                disabled={(date) => date < new Date() || date > (project.deadline as Timestamp).toDate()}
-                                                initialFocus
-                                            />
-                                            </PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" disabled={isLoading} size="icon">
-                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                                <span className="sr-only">Add Task</span>
-                            </Button>
-                        </form>
-                    </Form>
-                    <Separator />
-                </>
-            )}
-            
-            <ScrollArea className="h-96 pr-4">
-                <div className="space-y-2">
-                {parentTasks.length > 0 ? (
-                parentTasks.map(task => (
-                    <div key={task.id} className="space-y-2">
-                        {renderTask(task, false)}
-                        {showSubtaskInput === task.id && !readOnly && !isProjectCompleted && (
-                            <Form {...subtaskForm}>
-                                <form onSubmit={subtaskForm.handleSubmit((values) => handleSubtaskSubmit(values, task.id))} className="ml-8 flex items-center gap-2">
-                                    <FormField
-                                        control={subtaskForm.control}
-                                        name="title"
-                                        render={({ field }) => (
-                                        <FormItem className="flex-grow">
-                                            <FormControl>
-                                            <Input placeholder="Add a new subtask..." {...field} autoFocus />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                        )}
-                                    />
-                                    <Button type="submit" disabled={isLoading} size="icon">
-                                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                                        <span className="sr-only">Add Subtask</span>
-                                    </Button>
-                                </form>
-                            </Form>
-                        )}
-                        {task.subtasks?.map(subtask => renderTask(subtask, true))}
-                    </div>
-                ))
-                ) : (
-                <div className="flex h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
-                    <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-semibold">
-                    {readOnly ? 'No tasks yet' : 'No tasks created yet'}
-                    </h3>
-                    <p className="mb-4 mt-2 text-sm text-muted-foreground">
-                    {readOnly ? 'The student has not created any tasks.' : 'Add your first task to get started.'}
-                    </p>
-                </div>
+    <div className="space-y-4">
+      {!readOnly && !isProjectCompleted && (
+        <>
+          <Form {...taskForm}>
+            <form
+              onSubmit={taskForm.handleSubmit(onTaskSubmit)}
+              className="flex items-start gap-2"
+            >
+              <FormField
+                control={taskForm.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem className="flex-grow">
+                    <FormControl>
+                      <Input placeholder="Add a new task..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-                </div>
-            </ScrollArea>
-            {!readOnly && project.status !== 'Completed' && (
-              <DialogFooter className="pt-4">
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <div tabIndex={0} className={cn(!allTasksCompleted ? 'cursor-not-allowed' : '')}>
-                        <Button
-                            onClick={handleProjectSubmit}
-                            disabled={!allTasksCompleted || isSubmitting}
-                            className="w-full md:w-auto"
-                        >
-                            {isSubmitting ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Send className="mr-2 h-4 w-4" />
+              />
+              <FormField
+                control={taskForm.control}
+                name="dueDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={'outline'}
+                            className={cn(
+                              'w-[150px] pl-3 text-left font-normal',
+                              !field.value && 'text-muted-foreground'
                             )}
-                            Submit Project
-                        </Button>
-                      </div>
-                    </TooltipTrigger>
-                    {!allTasksCompleted && (
-                      <TooltipContent>
-                        <p>All tasks must be completed before you can submit.</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              </DialogFooter>
-            )}
-        </div>
-        <div className="flex flex-col rounded-lg border h-[calc(24rem+100px)]">
-            {selectedTask ? (
-                <>
-                <div className="p-4 border-b">
-                    <h4 className="font-semibold">{selectedTask.title}</h4>
-                    <p className="text-sm text-muted-foreground">Comments and activity</p>
-                </div>
-                <ScrollArea className="flex-1 p-4">
-                    <div className="space-y-4">
-                        {comments.length > 0 ? (
-                            comments.map(comment => (
-                                <div key={comment.id} className="flex items-start gap-3">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src={comment.userImage} />
-                                        <AvatarFallback>{comment.userName.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-semibold text-sm">{comment.userName}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {formatDistanceToNow((comment.createdAt as Timestamp).toDate(), { addSuffix: true })}
-                                            </p>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">{comment.text}</p>
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                             <p className="text-sm text-muted-foreground text-center py-8">No comments on this task yet.</p>
-                        )}
-                    </div>
-                </ScrollArea>
-                {!readOnly && !isProjectCompleted && (
-                    <div className="p-4 border-t bg-muted/50">
-                        <Form {...commentForm}>
-                            <form onSubmit={commentForm.handleSubmit(onCommentSubmit)} className="flex items-center gap-2">
-                                <FormField
-                                    control={commentForm.control}
-                                    name="text"
-                                    render={({ field }) => (
-                                    <FormItem className="flex-grow">
-                                        <FormControl>
-                                        <Input placeholder="Add a comment..." {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <Button type="submit" disabled={isCommenting}>
-                                    {isCommenting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Comment
-                                </Button>
-                            </form>
-                        </Form>
-                    </div>
+                          >
+                            {field.value ? (
+                              format(field.value, 'MMM d')
+                            ) : (
+                              <span>Set due date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date < new Date() ||
+                            date > (project.deadline as Timestamp).toDate()
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
                 )}
-                </>
-            ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                    <MessageCircle className="h-12 w-12 text-muted-foreground/50" />
-                    <p className="mt-4 text-sm font-medium text-muted-foreground">Select a task to view comments</p>
+              />
+              <Button type="submit" disabled={isLoading} size="icon">
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                <span className="sr-only">Add Task</span>
+              </Button>
+            </form>
+          </Form>
+          <Separator />
+        </>
+      )}
+
+      <div className="grid md:grid-cols-2 gap-6 h-[500px]">
+        <div className="flex flex-col">
+          <ScrollArea className="flex-grow pr-4 -mr-4">
+            <div className="space-y-2">
+              {parentTasks.length > 0 ? (
+                parentTasks.map((task) => (
+                  <div key={task.id} className="space-y-2">
+                    {renderTask(task, false)}
+                    {showSubtaskInput === task.id &&
+                      !readOnly &&
+                      !isProjectCompleted && (
+                        <Form {...subtaskForm}>
+                          <form
+                            onSubmit={subtaskForm.handleSubmit((values) =>
+                              handleSubtaskSubmit(values, task.id)
+                            )}
+                            className="ml-8 flex items-center gap-2"
+                          >
+                            <FormField
+                              control={subtaskForm.control}
+                              name="title"
+                              render={({ field }) => (
+                                <FormItem className="flex-grow">
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Add a new subtask..."
+                                      {...field}
+                                      autoFocus
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <Button
+                              type="submit"
+                              disabled={isLoading}
+                              size="icon"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Plus className="h-4 w-4" />
+                              )}
+                              <span className="sr-only">Add Subtask</span>
+                            </Button>
+                          </form>
+                        </Form>
+                      )}
+                    {task.subtasks?.map((subtask) =>
+                      renderTask(subtask, true)
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
+                  <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-semibold">
+                    {readOnly ? 'No tasks yet' : 'No tasks created yet'}
+                  </h3>
+                  <p className="mb-4 mt-2 text-sm text-muted-foreground">
+                    {readOnly
+                      ? 'The student has not created any tasks.'
+                      : 'Add your first task to get started.'}
+                  </p>
                 </div>
-            )}
+              )}
+            </div>
+          </ScrollArea>
         </div>
+        <div className="flex flex-col rounded-lg border">
+          {selectedTask ? (
+            <>
+              <div className="p-4 border-b">
+                <h4 className="font-semibold">{selectedTask.title}</h4>
+                <p className="text-sm text-muted-foreground">
+                  Comments and activity
+                </p>
+              </div>
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {comments.length > 0 ? (
+                    comments.map((comment) => (
+                      <div key={comment.id} className="flex items-start gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={comment.userImage} />
+                          <AvatarFallback>
+                            {comment.userName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-sm">
+                              {comment.userName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(
+                                (comment.createdAt as Timestamp).toDate(),
+                                { addSuffix: true }
+                              )}
+                            </p>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {comment.text}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No comments on this task yet.
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+              {!readOnly && !isProjectCompleted && (
+                <div className="p-4 border-t bg-muted/50">
+                  <Form {...commentForm}>
+                    <form
+                      onSubmit={commentForm.handleSubmit(onCommentSubmit)}
+                      className="flex items-center gap-2"
+                    >
+                      <FormField
+                        control={commentForm.control}
+                        name="text"
+                        render={({ field }) => (
+                          <FormItem className="flex-grow">
+                            <FormControl>
+                              <Input placeholder="Add a comment..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button type="submit" disabled={isCommenting}>
+                        {isCommenting && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        Comment
+                      </Button>
+                    </form>
+                  </Form>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+              <MessageCircle className="h-12 w-12 text-muted-foreground/50" />
+              <p className="mt-4 text-sm font-medium text-muted-foreground">
+                Select a task to view comments
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+      {!readOnly && project.status !== 'Completed' && (
+        <DialogFooter className="pt-4">
+          <TooltipProvider>
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <div
+                  tabIndex={0}
+                  className={cn(!allTasksCompleted ? 'cursor-not-allowed' : '')}
+                >
+                  <Button
+                    onClick={handleProjectSubmit}
+                    disabled={!allTasksCompleted || isSubmitting}
+                    className="w-full md:w-auto"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="mr-2 h-4 w-4" />
+                    )}
+                    Submit Project
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              {!allTasksCompleted && (
+                <TooltipContent>
+                  <p>All tasks must be completed before you can submit.</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        </DialogFooter>
+      )}
     </div>
   );
 }
