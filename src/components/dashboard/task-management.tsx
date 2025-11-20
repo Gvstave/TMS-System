@@ -234,7 +234,7 @@ export function TaskManagement({
         description: `"${values.title}" has been added.`,
       });
       taskForm.reset();
-      if (result.updatedProjectStatus && onTaskCreated) {
+      if (onTaskCreated) {
         onTaskCreated();
       }
     } else {
@@ -266,7 +266,7 @@ export function TaskManagement({
       });
       subtaskForm.reset();
       setShowSubtaskInput(null);
-      if (result.updatedProjectStatus && onTaskCreated) {
+      if (onTaskCreated) {
         onTaskCreated();
       }
     } else {
