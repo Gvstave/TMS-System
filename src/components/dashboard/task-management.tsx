@@ -257,8 +257,8 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
 
   const isProjectCompleted = project.status === 'Completed';
 
-  const renderTask = (task: Task, isSubtask: boolean) => (
-     <Card 
+ const renderTask = (task: Task, isSubtask: boolean) => (
+    <Card 
         key={task.id} 
         className={cn(
             "cursor-pointer transition-all hover:bg-muted/50",
@@ -267,67 +267,67 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
         )}
         onClick={() => setSelectedTask(task)}
     >
-        <CardContent className="p-3 flex items-center justify-between gap-4">
-        <div className="flex-grow flex items-center gap-2">
-            {isSubtask && <CornerDownRight className="h-4 w-4 text-muted-foreground" />}
-            <p className="flex-grow">{task.title}</p>
-            {task.dueDate && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <CalendarIcon className="h-3 w-3" />
-                    <span>{format((task.dueDate as Timestamp).toDate(), 'MMM d')}</span>
-                </div>
-            )}
-        </div>
-        <div className="flex items-center gap-2">
-            {!isSubtask && !readOnly && !isProjectCompleted && (
-                 <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
-                                <MessageSquarePlus className="h-4 w-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Add subtask</p>
-                        </TooltipContent>
-                    </Tooltip>
-                 </TooltipProvider>
-            )}
-            <Select
-                value={task.status}
-                onValueChange={(newStatus: TaskStatus) => handleStatusChange(task.id, newStatus)}
-                disabled={isUpdating === task.id || readOnly || isProjectCompleted}
-            >
-                <SelectTrigger className="w-[150px] flex-shrink-0" onClick={e => e.stopPropagation()}>
-                    <SelectValue>
-                        <div className="flex items-center gap-2">
-                            {isUpdating === task.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                React.createElement(statusConfig[task.status].icon, {
-                                    className: cn('h-4 w-4', statusConfig[task.status].color),
-                                })
-                            )}
-                            <span>{task.status}</span>
-                        </div>
-                    </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                    {Object.keys(statusConfig).map((status) => {
-                        const Icon = statusConfig[status as TaskStatus].icon;
-                        const color = statusConfig[status as TaskStatus].color;
-                        return (
-                        <SelectItem key={status} value={status}>
+        <CardContent className="p-3 flex items-center justify-between gap-2">
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+                {isSubtask && <CornerDownRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                <p className="flex-1 truncate">{task.title}</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+                {task.dueDate && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <CalendarIcon className="h-3 w-3" />
+                        <span>{format((task.dueDate as Timestamp).toDate(), 'MMM d')}</span>
+                    </div>
+                )}
+                {!isSubtask && !readOnly && !isProjectCompleted && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
+                                    <MessageSquarePlus className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Add subtask</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
+                <Select
+                    value={task.status}
+                    onValueChange={(newStatus: TaskStatus) => handleStatusChange(task.id, newStatus)}
+                    disabled={isUpdating === task.id || readOnly || isProjectCompleted}
+                >
+                    <SelectTrigger className="w-[150px] flex-shrink-0" onClick={e => e.stopPropagation()}>
+                        <SelectValue>
                             <div className="flex items-center gap-2">
-                            <Icon className={cn('h-4 w-4', color)} />
-                            <span>{status}</span>
+                                {isUpdating === task.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    React.createElement(statusConfig[task.status].icon, {
+                                        className: cn('h-4 w-4', statusConfig[task.status].color),
+                                    })
+                                )}
+                                <span>{task.status}</span>
                             </div>
-                        </SelectItem>
-                        );
-                    })}
-                </SelectContent>
-            </Select>
-        </div>
+                        </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                        {Object.keys(statusConfig).map((status) => {
+                            const Icon = statusConfig[status as TaskStatus].icon;
+                            const color = statusConfig[status as TaskStatus].color;
+                            return (
+                            <SelectItem key={status} value={status}>
+                                <div className="flex items-center gap-2">
+                                <Icon className={cn('h-4 w-4', color)} />
+                                <span>{status}</span>
+                                </div>
+                            </SelectItem>
+                            );
+                        })}
+                    </SelectContent>
+                </Select>
+            </div>
         </CardContent>
     </Card>
   )
