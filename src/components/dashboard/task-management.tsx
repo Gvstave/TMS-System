@@ -106,7 +106,7 @@ export function TaskManagement({
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [liveProject, setLiveProject] = useState<Project | null>(null);
+  const [liveProject, setLiveProject] = useState<Project>(initialProject);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmittingTask, setIsSubmittingTask] = useState(false);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
@@ -136,17 +136,12 @@ export function TaskManagement({
     const unsubscribe = onSnapshot(projectRef, (doc) => {
       if (doc.exists()) {
         const data = doc.data();
-        // Ensure timestamps are correctly handled
         const deadline = data.deadline instanceof Timestamp ? data.deadline : initialProject.deadline;
         const createdAt = data.createdAt instanceof Timestamp ? data.createdAt : initialProject.createdAt;
         setLiveProject({ id: doc.id, ...data, deadline, createdAt } as Project);
-      } else {
-        setLiveProject(null);
       }
     }, (error) => {
        console.error("Error fetching project: ", error);
-       // Fallback to the initial prop on error
-       setLiveProject(initialProject);
     });
     return () => unsubscribe();
   }, [initialProject.id]);
@@ -172,7 +167,6 @@ export function TaskManagement({
        if (error.code === 'failed-precondition' && error.message.includes('index')) {
         const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
         const databaseId = "(default)";
-        // Correctly construct the URL for creating an index.
         const createIndexURL = `https://console.firebase.google.com/project/${projectId}/firestore/databases/${databaseId}/indexes?create_composite=tasks`;
         
         toast({
@@ -208,7 +202,6 @@ export function TaskManagement({
       if (!selectedExists || !selectedTask) {
         setSelectedTask(tasks.find(t => !t.parentId) || tasks[0]);
       } else {
-        // If the selected task was updated, get its new version from the list
         const updatedSelectedTask = tasks.find(t => t.id === selectedTask.id);
         if (updatedSelectedTask) {
           setSelectedTask(updatedSelectedTask);
@@ -351,7 +344,6 @@ export function TaskManagement({
     if (!user || readOnly) return;
     setIsUpdating(taskId);
     await updateTaskStatus(taskId, newStatus, user.uid);
-    // Don't show toast, real-time updates handle UI change
     setIsUpdating(null);
   };
 
@@ -456,26 +448,26 @@ export function TaskManagement({
 
   if (!liveProject) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col space-y-4">
+    <div className="flex h-full max-h-[80vh] flex-col space-y-4">
       {!readOnly && !isProjectCompleted && (
         <div className='space-y-4 rounded-md border p-4'>
           <Form {...taskForm}>
             <form
               onSubmit={taskForm.handleSubmit(onTaskSubmit)}
-              className="flex items-start gap-4"
+              className="flex flex-col sm:flex-row items-start gap-4"
             >
               <FormField
                 control={taskForm.control}
                 name="title"
                 render={({ field }) => (
-                  <FormItem className="flex-grow">
+                  <FormItem className="flex-grow w-full">
                     <FormControl>
                       <Input placeholder="Add a new task..." {...field} />
                     </FormControl>
@@ -483,6 +475,7 @@ export function TaskManagement({
                   </FormItem>
                 )}
               />
+              <div className="flex w-full sm:w-auto gap-2">
               <FormField
                 control={taskForm.control}
                 name="dueDate"
@@ -494,7 +487,7 @@ export function TaskManagement({
                           <Button
                             variant={'outline'}
                             className={cn(
-                              'w-[180px] pl-3 text-left font-normal',
+                              'w-full sm:w-[180px] pl-3 text-left font-normal',
                               !field.value && 'text-muted-foreground'
                             )}
                           >
@@ -515,7 +508,6 @@ export function TaskManagement({
                           disabled={(date) => {
                             const deadline = liveProject?.deadline;
                             if (!deadline) return true;
-                            // Ensure deadline is a Date object before comparison
                             const deadlineDate = deadline instanceof Timestamp ? deadline.toDate() : new Date();
                             return date < new Date() || date > deadlineDate;
                           }}
@@ -531,10 +523,11 @@ export function TaskManagement({
                 {isSubmittingTask ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="mr-0 sm:mr-2 h-4 w-4" />
                 )}
-                Add Task
+                <span className="hidden sm:inline">Add Task</span>
               </Button>
+              </div>
             </form>
           </Form>
            <div className="flex justify-end">
@@ -543,8 +536,8 @@ export function TaskManagement({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0 flex-1">
-        <div className="flex flex-col space-y-2 rounded-md border p-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0 flex-1">
+        <div className="flex flex-col space-y-2 rounded-md border p-2 min-h-[300px] lg:min-h-0">
            {parentTasks.length === 0 && !isLoading && (
                  <div className="flex h-full flex-col items-center justify-center rounded-lg bg-muted/50 p-12 text-center">
                     <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -602,7 +595,7 @@ export function TaskManagement({
                  </div>
             </ScrollArea>
         </div>
-        <div className="flex h-full flex-col rounded-lg border">
+        <div className="flex h-full flex-col rounded-lg border min-h-[300px] lg:min-h-0">
             {selectedTask ? (
                 <>
                     <div className="p-4 border-b">
@@ -698,5 +691,3 @@ export function TaskManagement({
     </div>
   );
 }
-
-    

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/context/auth-context';
@@ -5,7 +6,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { MainSidebar } from '@/components/main-sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import {
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -16,7 +20,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (!loading && !user) {
       router.replace(`/login?redirect=${pathname}`);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   if (loading || !user) {
     return (
@@ -30,7 +34,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="flex min-h-screen">
         <MainSidebar />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 flex flex-col overflow-y-auto">
+          <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 md:hidden">
+             <SidebarTrigger className="sm:hidden" />
+          </header>
+          {children}
+        </main>
       </div>
     </SidebarProvider>
   );

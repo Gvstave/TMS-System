@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -42,6 +43,7 @@ import { Badge } from '@/components/ui/badge';
 import { generateTaskSuggestions } from '@/lib/ai-actions';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '../ui/scroll-area';
 
 const projectSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters.' }),
@@ -155,6 +157,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
             Fill in the details below to assign a new project to one or more students.
           </DialogDescription>
         </DialogHeader>
+        <ScrollArea className="max-h-[80vh] pr-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
@@ -376,6 +379,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
              </div>
 
             <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={isLoading || isGenerating}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Project
@@ -383,6 +387,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
             </DialogFooter>
           </form>
         </Form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

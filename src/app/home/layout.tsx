@@ -7,7 +7,7 @@ import { ReactNode } from 'react';
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="flex h-14 items-center border-b px-4 lg:px-6">
+      <header className="flex h-14 items-center border-b px-4 sm:px-6">
         <Link
           href="/home"
           className="flex items-center justify-center gap-2"
@@ -16,13 +16,13 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
           <CheckSquare className="h-6 w-6 text-primary" />
           <span className="text-lg font-semibold">TMS</span>
         </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
-          <Button asChild variant="ghost">
+        <nav className="ml-auto flex items-center gap-2 sm:gap-4">
+          <Button asChild variant="ghost" size="sm">
             <Link href="/login" prefetch={false}>
               Sign in
             </Link>
           </Button>
-          <Button asChild>
+          <Button asChild size="sm">
             <Link href="/signup" prefetch={false}>
               Sign up
             </Link>
