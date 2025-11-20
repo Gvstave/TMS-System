@@ -8,7 +8,6 @@ import {
   SidebarMenuItem,
   SidebarFooter,
   SidebarProvider,
-  SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { LayoutDashboard } from 'lucide-react';
 import { Logo } from './logo';

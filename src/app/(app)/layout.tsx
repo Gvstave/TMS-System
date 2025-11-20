@@ -15,7 +15,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (!loading && !user) {
       router.replace(`/login?redirect=${pathname}`);
     }
-  }, [user, loading, router, pathname]);
+  }, [user, loading, router]);
 
   if (loading || !user) {
     return (
