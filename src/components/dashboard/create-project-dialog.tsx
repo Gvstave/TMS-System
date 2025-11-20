@@ -39,7 +39,7 @@ import type { User } from '@/lib/types';
 import { createProject } from '@/lib/actions';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
-import { breakdownProject } from '@/ai/flows/breakdown-flow';
+import { generateTaskSuggestions } from '@/lib/ai-actions';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 
@@ -93,7 +93,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
     form.setValue('tasks', []);
 
     try {
-      const result = await breakdownProject({ title, description });
+      const result = await generateTaskSuggestions({ title, description });
       if (result.tasks) {
         setSuggestedTasks(result.tasks);
         // Pre-select all suggested tasks

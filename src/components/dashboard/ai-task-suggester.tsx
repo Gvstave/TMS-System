@@ -12,7 +12,6 @@ import {
   DialogFooter,
 } from '../ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { breakdownProject } from '@/ai/flows/breakdown-flow';
 import type { Project, Task } from '@/lib/types';
 import { Form, FormField, FormItem, FormControl, FormLabel, FormMessage } from '../ui/form';
 import { useForm } from 'react-hook-form';
@@ -21,6 +20,7 @@ import * as z from 'zod';
 import { Checkbox } from '../ui/checkbox';
 import { createTask } from '@/lib/actions';
 import { useAuth } from '@/context/auth-context';
+import { generateTaskSuggestions } from '@/lib/ai-actions';
 
 interface AITaskSuggesterProps {
   project: Project;
@@ -53,7 +53,7 @@ export function AITaskSuggester({ project, existingTasks, onTasksAdded }: AITask
     form.reset();
 
     try {
-      const result = await breakdownProject({
+      const result = await generateTaskSuggestions({
         title: project.title,
         description: project.description,
         existingTasks: existingTasks.map(t => t.title),
@@ -84,17 +84,19 @@ export function AITaskSuggester({ project, existingTasks, onTasksAdded }: AITask
     if (!user) return;
     setIsSubmitting(true);
 
+    let tasksAddedCount = 0;
     try {
       for (const taskTitle of values.tasks) {
-        await createTask({
+        const result = await createTask({
           projectId: project.id,
           title: taskTitle,
           status: 'Pending',
           createdBy: user.uid,
         });
+        if(result.success) tasksAddedCount++;
       }
       toast({
-        title: `${values.tasks.length} task(s) added`,
+        title: `${tasksAddedCount} task(s) added`,
         description: 'The new tasks have been added to your project.',
       });
       onTasksAdded();
