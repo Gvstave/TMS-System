@@ -1,4 +1,4 @@
-# Report: Task Management & Scheduling System (TMS)
+# Task Management & Scheduling System (TMS)
 
 ## 1. About The Project
 
