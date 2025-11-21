@@ -129,7 +129,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
          />}
       />
       <Tabs defaultValue="all" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex md:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-4 sm:w-auto sm:inline-flex">
           <TabsTrigger value="all">All</TabsTrigger>
           {statuses.map((status) => (
             <TabsTrigger key={status} value={status}>
