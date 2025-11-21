@@ -9,13 +9,13 @@ function LoginPageContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/dashboard';
 
   useEffect(() => {
     if (!loading && user) {
+      const redirectUrl = searchParams.get('redirect') || '/dashboard';
       router.replace(redirectUrl);
     }
-  }, [user, loading, router, redirectUrl]);
+  }, [user, loading, router, searchParams]);
 
   if (loading || user) {
     return (

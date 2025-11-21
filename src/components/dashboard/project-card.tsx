@@ -23,12 +23,9 @@ import {
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { Timestamp } from 'firebase/firestore';
-import { TaskManagement } from './task-management';
+import { TaskManagementDialogContent } from './task-management-dialog-content';
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -125,91 +122,86 @@ export function ProjectCard({
     }
   };
 
-  const cardContent = (
-    <Card
-      className={cn('flex h-full flex-col transition-all', cardBorderColor)}
-    >
-      <CardHeader className="flex-row items-start justify-between gap-4">
-        <div>
-          <CardTitle className="font-headline text-lg tracking-tight line-clamp-2">
-            {project.title}
-          </CardTitle>
-          <CardDescription className="line-clamp-3">
-            {project.description}
-          </CardDescription>
-        </div>
-        {userRole === 'lecturer' && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setTaskDialogOpen(true)}>
-                <View className="mr-2 h-4 w-4" />
-                View Progress
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                onSelect={() => setShowDeleteAlert(true)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Project
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </CardHeader>
-      <CardContent className="flex-grow space-y-4">
-        <div className={cn('flex items-center text-sm', deadlineColor)}>
-          {daysUntilDeadline < 0 && project.status !== 'Completed' ? (
-            <AlertTriangle className="mr-2 h-4 w-4" />
-          ) : (
-            <Clock className="mr-2 h-4 w-4" />
-          )}
-          <span>{deadlineText}</span>
-        </div>
-        <div className="flex items-center">
-          <Badge
-            variant="outline"
-            className="flex items-center gap-2 text-sm"
-          >
-            <StatusIcon
-              className={cn('h-4 w-4', statusConfig[project.status].color)}
-            />
-            {project.status}
-          </Badge>
-        </div>
-      </CardContent>
-      <CardFooter className="flex-col items-start gap-2">
-        <div className="flex items-center text-xs text-muted-foreground">
-          <Users className="mr-2 h-3 w-3" />
-          <span className="truncate">{assignedToNames}</span>
-        </div>
-        {userRole === 'student' && (
-          <Button
-            variant="outline"
-            className="w-full !mt-4"
-            onClick={() => setTaskDialogOpen(true)}
-          >
-            Manage Tasks
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
-  );
-
   return (
     <Dialog open={isTaskDialogOpen} onOpenChange={handleTaskDialogChange}>
-      {cardContent}
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>{project.title}</DialogTitle>
-        </DialogHeader>
-        <TaskManagement project={project} readOnly={userRole === 'lecturer'} />
-      </DialogContent>
+      <Card
+        className={cn('flex h-full flex-col transition-all', cardBorderColor)}
+      >
+        <CardHeader className="flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle className="font-headline text-lg tracking-tight line-clamp-2">
+              {project.title}
+            </CardTitle>
+            <CardDescription className="line-clamp-3">
+              {project.description}
+            </CardDescription>
+          </div>
+          {userRole === 'lecturer' && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                 <DialogTrigger asChild>
+                    <DropdownMenuItem>
+                      <View className="mr-2 h-4 w-4" />
+                      View Progress
+                    </DropdownMenuItem>
+                </DialogTrigger>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                  onSelect={() => setShowDeleteAlert(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Project
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </CardHeader>
+        <CardContent className="flex-grow space-y-4">
+          <div className={cn('flex items-center text-sm', deadlineColor)}>
+            {daysUntilDeadline < 0 && project.status !== 'Completed' ? (
+              <AlertTriangle className="mr-2 h-4 w-4" />
+            ) : (
+              <Clock className="mr-2 h-4 w-4" />
+            )}
+            <span>{deadlineText}</span>
+          </div>
+          <div className="flex items-center">
+            <Badge
+              variant="outline"
+              className="flex items-center gap-2 text-sm"
+            >
+              <StatusIcon
+                className={cn('h-4 w-4', statusConfig[project.status].color)}
+              />
+              {project.status}
+            </Badge>
+          </div>
+        </CardContent>
+        <CardFooter className="flex-col items-start gap-2">
+          <div className="flex items-center text-xs text-muted-foreground">
+            <Users className="mr-2 h-3 w-3" />
+            <span className="truncate">{assignedToNames}</span>
+          </div>
+          {userRole === 'student' && (
+             <DialogTrigger asChild>
+                <Button
+                    variant="outline"
+                    className="w-full !mt-4"
+                >
+                    Manage Tasks
+                </Button>
+             </DialogTrigger>
+          )}
+        </CardFooter>
+      </Card>
+
+      <TaskManagementDialogContent project={project} readOnly={userRole === 'lecturer'} />
 
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogContent>

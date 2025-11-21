@@ -2,7 +2,7 @@
 'use client';
 
 import { useAuth } from '@/context/auth-context';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { MainSidebar } from '@/components/main-sidebar';
@@ -14,13 +14,12 @@ import {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace(`/login?redirect=${pathname}`);
+      router.replace(`/login`);
     }
-  }, [user, loading, router, pathname]);
+  }, [user, loading, router]);
 
   if (loading || !user) {
     return (
